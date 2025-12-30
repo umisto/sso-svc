@@ -15,26 +15,22 @@ const AccountLoginEvent = "account.login"
 
 type AccountLoginPayload struct {
 	Account models.Account `json:"account"`
-	Email   string         `json:"email"`
 }
 
 const AccountPasswordChangeEvent = "account.password.change"
 
 type AccountPasswordChangePayload struct {
 	Account models.Account `json:"account"`
-	Email   string         `json:"email"`
 }
 
 const AccountUsernameChangeEvent = "account.username.change"
 
 type AccountUsernameChangePayload struct {
 	Account models.Account `json:"account"`
-	Email   string         `json:"email"`
 }
 
 const AccountDeletedEvent = "account.deleted"
 
 type AccountDeletedPayload struct {
 	Account models.Account `json:"account"`
-	Email   string         `json:"email,omitempty"`
 }

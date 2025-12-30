@@ -15,7 +15,7 @@ func (s Service) VerifyEmail(ctx context.Context, email string) (models.AccountE
 		return models.AccountEmail{}, err
 	}
 
-	emailData, err := s.db.UpdateAccountEmailVerification(ctx, account.ID, true)
+	emailData, err := s.repo.UpdateAccountEmailVerification(ctx, account.ID, true)
 	if err != nil {
 		return models.AccountEmail{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("verifying email for account %s, cause: %w", account.ID, err),

@@ -33,7 +33,7 @@ func (s Service) Refresh(ctx context.Context, oldRefreshToken string) (models.To
 		return models.TokensPair{}, err
 	}
 
-	token, err := s.db.GetSessionToken(ctx, tokenData.SessionID)
+	token, err := s.repo.GetSessionToken(ctx, tokenData.SessionID)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to get session with id: %s for account %s, cause: %w", tokenData.SessionID, accountID, err),
@@ -81,7 +81,7 @@ func (s Service) Refresh(ctx context.Context, oldRefreshToken string) (models.To
 		)
 	}
 
-	_, err = s.db.UpdateSessionToken(ctx, tokenData.SessionID, refreshCrypto)
+	_, err = s.repo.UpdateSessionToken(ctx, tokenData.SessionID, refreshCrypto)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to save refresh token for account %s, cause: %w", accountID, err),

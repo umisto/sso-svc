@@ -63,7 +63,7 @@ func (s Service) checkAccountPassword(
 	accountID uuid.UUID,
 	password string,
 ) error {
-	passData, err := s.db.GetAccountPassword(ctx, accountID)
+	passData, err := s.repo.GetAccountPassword(ctx, accountID)
 	if err != nil {
 		return errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to get account password, cause: %w", err),
@@ -95,23 +95,24 @@ func (s Service) createSession(
 		)
 	}
 
-	_, err = s.db.CreateSession(ctx, sessionID, account.ID, refreshTokenCrypto)
-	if err != nil {
-		return models.TokensPair{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to createSession session for account %s, cause: %w", account.ID, err),
-		)
-	}
+	if err = s.repo.Transaction(ctx, func(txCtx context.Context) error {
+		_, err = s.repo.CreateSession(ctx, sessionID, account.ID, refreshTokenCrypto)
+		if err != nil {
+			return errx.ErrorInternal.Raise(
+				fmt.Errorf("failed to createSession session for account %s, cause: %w", account.ID, err),
+			)
+		}
 
-	email, err := s.GetAccountEmail(ctx, account.ID)
-	if err != nil {
+		err = s.messanger.WriteAccountLogin(ctx, account)
+		if err != nil {
+			return errx.ErrorInternal.Raise(
+				fmt.Errorf("failed to publish account login messanger for account %s: %w", account.ID, err),
+			)
+		}
+
+		return nil
+	}); err != nil {
 		return models.TokensPair{}, err
-	}
-
-	err = s.event.WriteAccountLogin(ctx, account, email.Email)
-	if err != nil {
-		return models.TokensPair{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to publish account login event for account %s: %w", account.ID, err),
-		)
 	}
 
 	return models.TokensPair{

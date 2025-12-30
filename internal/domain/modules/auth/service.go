@@ -13,6 +13,24 @@ import (
 	"github.com/umisto/sso-svc/internal/domain/models"
 )
 
+type Service struct {
+	repo      database
+	jwt       JWTManager
+	messanger messanger
+}
+
+func NewService(
+	db database,
+	jwt JWTManager,
+	event messanger,
+) *Service {
+	return &Service{
+		repo:      db,
+		jwt:       jwt,
+		messanger: event,
+	}
+}
+
 type JWTManager interface {
 	EncryptAccess(token string) (string, error)
 	EncryptRefresh(token string) (string, error)
@@ -29,11 +47,12 @@ type JWTManager interface {
 	) (string, error)
 }
 
-type EventPublisher interface {
+type messanger interface {
 	WriteAccountCreated(ctx context.Context, account models.Account, email string) error
-	WriteAccountPasswordChanged(ctx context.Context, account models.Account, email string) error
-	WriteAccountUsernameChanged(ctx context.Context, account models.Account, email string) error
-	WriteAccountLogin(ctx context.Context, account models.Account, email string) error
+	WriteAccountPasswordChanged(ctx context.Context, account models.Account) error
+	WriteAccountUsernameChanged(ctx context.Context, account models.Account) error
+	WriteAccountLogin(ctx context.Context, account models.Account) error
+	WriteAccountDeleted(ctx context.Context, account models.Account) error
 }
 
 type CreateAccountParams struct {
@@ -102,24 +121,6 @@ type database interface {
 	DeleteAccountSession(ctx context.Context, accountID, sessionID uuid.UUID) error
 
 	Transaction(ctx context.Context, fn func(ctx context.Context) error) error
-}
-
-type Service struct {
-	db    database
-	jwt   JWTManager
-	event EventPublisher
-}
-
-func NewService(
-	db database,
-	jwt JWTManager,
-	event EventPublisher,
-) *Service {
-	return &Service{
-		db:    db,
-		jwt:   jwt,
-		event: event,
-	}
 }
 
 func (s Service) CheckPasswordRequirements(password string) error {

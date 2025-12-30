@@ -12,7 +12,7 @@ func (s Service) ValidateSession(
 	ctx context.Context,
 	initiator InitiatorData,
 ) (models.Account, models.Session, error) {
-	account, err := s.db.GetAccountByID(ctx, initiator.AccountID)
+	account, err := s.repo.GetAccountByID(ctx, initiator.AccountID)
 	if err != nil {
 		return models.Account{}, models.Session{}, errx.ErrorInitiatorNotFound.Raise(
 			fmt.Errorf("failed to get account with id '%s', cause: %w", initiator.SessionID, err),
@@ -30,7 +30,7 @@ func (s Service) ValidateSession(
 		)
 	}
 
-	session, err := s.db.GetSession(ctx, initiator.SessionID)
+	session, err := s.repo.GetSession(ctx, initiator.SessionID)
 	if err != nil {
 		return models.Account{}, models.Session{}, errx.ErrorInitiatorInvalidSession.Raise(
 			fmt.Errorf("failed to get session with id '%s', cause: %w", initiator.SessionID, err),

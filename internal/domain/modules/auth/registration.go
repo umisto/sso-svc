@@ -67,8 +67,8 @@ func (s Service) Registration(
 	}
 
 	var account models.Account
-	err = s.db.Transaction(ctx, func(txCtx context.Context) error {
-		account, err = s.db.CreateAccount(ctx, CreateAccountParams{
+	err = s.repo.Transaction(ctx, func(txCtx context.Context) error {
+		account, err = s.repo.CreateAccount(ctx, CreateAccountParams{
 			Username:     params.Username,
 			Role:         params.Role,
 			Email:        params.Email,
@@ -80,15 +80,15 @@ func (s Service) Registration(
 			)
 		}
 
+		err = s.messanger.WriteAccountCreated(ctx, account, params.Email)
+		if err != nil {
+			return errx.ErrorInternal.Raise(
+				fmt.Errorf("failed to publish account created messanger for account '%s', cause: %w", account.ID, err),
+			)
+		}
+
 		return nil
 	})
-
-	err = s.event.WriteAccountCreated(ctx, account, params.Email)
-	if err != nil {
-		return models.Account{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to publish account created event for account '%s', cause: %w", account.ID, err),
-		)
-	}
 
 	return account, nil
 }
@@ -98,7 +98,7 @@ func (s Service) RegistrationByAdmin(
 	initiatorID uuid.UUID,
 	params RegistrationParams,
 ) (models.Account, error) {
-	initiator, err := s.db.GetAccountByID(ctx, initiatorID)
+	initiator, err := s.repo.GetAccountByID(ctx, initiatorID)
 	if err != nil {
 		return models.Account{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to get initiator with id '%s', cause: %w", initiatorID, err),
@@ -125,10 +125,10 @@ func (s Service) RegistrationByAdmin(
 		return models.Account{}, err
 	}
 
-	err = s.event.WriteAccountCreated(ctx, account, params.Email)
+	err = s.messanger.WriteAccountCreated(ctx, account, params.Email)
 	if err != nil {
 		return models.Account{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to publish admin created event for account '%s', cause: %w", account.ID, err),
+			fmt.Errorf("failed to publish admin created messanger for account '%s', cause: %w", account.ID, err),
 		)
 	}
 

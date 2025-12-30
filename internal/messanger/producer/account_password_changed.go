@@ -9,17 +9,15 @@ import (
 	"github.com/umisto/kafkakit/box"
 	"github.com/umisto/kafkakit/header"
 	"github.com/umisto/sso-svc/internal/domain/models"
-	"github.com/umisto/sso-svc/internal/messaging/contracts"
+	"github.com/umisto/sso-svc/internal/messanger/contracts"
 )
 
 func (s Service) WriteAccountPasswordChanged(
 	ctx context.Context,
 	account models.Account,
-	email string,
 ) error {
 	payload, err := json.Marshal(contracts.AccountPasswordChangePayload{
 		Account: account,
-		Email:   email,
 	})
 	if err != nil {
 		return err

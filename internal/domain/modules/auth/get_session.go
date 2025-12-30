@@ -16,7 +16,7 @@ func (s Service) GetOwnSession(ctx context.Context, initiator InitiatorData, ses
 		return models.Session{}, err
 	}
 
-	session, err := s.db.GetAccountSession(ctx, initiator.AccountID, sessionID)
+	session, err := s.repo.GetAccountSession(ctx, initiator.AccountID, sessionID)
 	if err != nil {
 		return models.Session{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to get session with id: %s for account %s, cause: %w", sessionID, initiator.AccountID, err),
@@ -42,7 +42,7 @@ func (s Service) GetOwnSessions(
 		return pagi.Page[[]models.Session]{}, err
 	}
 
-	sessions, err := s.db.GetSessionsForAccount(ctx, initiator.AccountID, limit, offset)
+	sessions, err := s.repo.GetSessionsForAccount(ctx, initiator.AccountID, limit, offset)
 	if err != nil {
 		return pagi.Page[[]models.Session]{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to list sessions for account %s, cause: %w", initiator.AccountID, err),

@@ -8,17 +8,26 @@ import (
 )
 
 func (s Service) DeleteOwnAccount(ctx context.Context, initiator InitiatorData) error {
-	_, _, err := s.ValidateSession(ctx, initiator)
+	account, _, err := s.ValidateSession(ctx, initiator)
 	if err != nil {
 		return err
 	}
 
-	err = s.db.DeleteAccount(ctx, initiator.AccountID)
-	if err != nil {
-		return errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to delete account with id: %s, cause: %w", initiator.AccountID, err),
-		)
-	}
+	return s.repo.Transaction(ctx, func(txCtx context.Context) error {
+		err = s.repo.DeleteAccount(ctx, initiator.AccountID)
+		if err != nil {
+			return errx.ErrorInternal.Raise(
+				fmt.Errorf("failed to delete account with id: %s, cause: %w", initiator.AccountID, err),
+			)
+		}
 
-	return nil
+		err = s.messanger.WriteAccountDeleted(ctx, account)
+		if err != nil {
+			return errx.ErrorInternal.Raise(
+				fmt.Errorf("failed to write account deleted event for account id: %s, cause: %w", initiator.AccountID, err),
+			)
+		}
+
+		return nil
+	})
 }

@@ -19,7 +19,7 @@ require (
 	github.com/umisto/logium v0.1.4
 	github.com/umisto/pagi v0.2.8
 	github.com/umisto/pgx v0.1.0
-	github.com/umisto/restkit v0.4.2
+	github.com/umisto/restkit v0.4.3
 	golang.org/x/crypto v0.46.0
 	golang.org/x/oauth2 v0.34.0
 )

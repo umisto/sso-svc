@@ -9,7 +9,7 @@ import (
 	"github.com/umisto/logium"
 	"github.com/umisto/sso-svc/internal"
 	"github.com/umisto/sso-svc/internal/domain/modules/auth"
-	"github.com/umisto/sso-svc/internal/messaging/producer"
+	"github.com/umisto/sso-svc/internal/messanger/producer"
 	"github.com/umisto/sso-svc/internal/repository"
 	"github.com/umisto/sso-svc/internal/rest"
 	"github.com/umisto/sso-svc/internal/rest/controller"

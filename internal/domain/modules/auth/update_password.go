@@ -18,7 +18,7 @@ func (s Service) UpdatePassword(
 		return err
 	}
 
-	passData, err := s.db.GetAccountPassword(ctx, initiator.AccountID)
+	passData, err := s.repo.GetAccountPassword(ctx, initiator.AccountID)
 	if err != nil {
 		return errx.ErrorInternal.Raise(
 			fmt.Errorf("getting password for account %s, cause: %w", initiator.AccountID, err),
@@ -49,35 +49,28 @@ func (s Service) UpdatePassword(
 		)
 	}
 
-	if err = s.db.Transaction(ctx, func(txCtx context.Context) error {
-		_, err = s.db.UpdateAccountPassword(ctx, initiator.AccountID, string(hash))
+	return s.repo.Transaction(ctx, func(txCtx context.Context) error {
+		_, err = s.repo.UpdateAccountPassword(ctx, initiator.AccountID, string(hash))
 		if err != nil {
 			return errx.ErrorInternal.Raise(
 				fmt.Errorf("updating password for account %s, cause: %w", initiator.AccountID, err),
 			)
 		}
 
-		err = s.db.DeleteSessionsForAccount(ctx, account.ID)
+		err = s.repo.DeleteSessionsForAccount(ctx, account.ID)
 		if err != nil {
 			return errx.ErrorInternal.Raise(
 				fmt.Errorf("deleting sessions for account %s after password change, cause: %w", initiator.AccountID, err),
 			)
 		}
 
+		err = s.messanger.WriteAccountPasswordChanged(ctx, account)
+		if err != nil {
+			return errx.ErrorInternal.Raise(
+				fmt.Errorf("failed to write account password changed event for account id: %s, cause: %w", initiator.AccountID, err),
+			)
+		}
+
 		return nil
-	}); err != nil {
-		return err
-	}
-
-	email, err := s.GetAccountEmail(ctx, account.ID)
-	if err != nil {
-		return err
-	}
-
-	err = s.event.WriteAccountPasswordChanged(ctx, account, email.Email)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	})
 }

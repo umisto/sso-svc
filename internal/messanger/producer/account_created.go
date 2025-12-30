@@ -9,15 +9,15 @@ import (
 	"github.com/umisto/kafkakit/box"
 	"github.com/umisto/kafkakit/header"
 	"github.com/umisto/sso-svc/internal/domain/models"
-	"github.com/umisto/sso-svc/internal/messaging/contracts"
+	"github.com/umisto/sso-svc/internal/messanger/contracts"
 )
 
-func (s Service) WriteAccountLogin(
+func (s Service) WriteAccountCreated(
 	ctx context.Context,
 	account models.Account,
 	email string,
 ) error {
-	payload, err := json.Marshal(contracts.AccountLoginPayload{
+	payload, err := json.Marshal(contracts.AccountCreatedPayload{
 		Account: account,
 		Email:   email,
 	})
@@ -34,7 +34,7 @@ func (s Service) WriteAccountLogin(
 			Value: payload,
 			Headers: []kafka.Header{
 				{Key: header.EventID, Value: []byte(uuid.New().String())}, // Outbox will fill this
-				{Key: header.EventType, Value: []byte(contracts.AccountLoginEvent)},
+				{Key: header.EventType, Value: []byte(contracts.AccountCreatedEvent)},
 				{Key: header.EventVersion, Value: []byte("1")},
 				{Key: header.Producer, Value: []byte(contracts.SsoSvcGroup)},
 				{Key: header.ContentType, Value: []byte("application/json")},
