@@ -6,8 +6,8 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
-	"github.com/netbill/auth-svc/internal/domain/modules/auth"
+	"github.com/netbill/auth-svc/internal/core/errx"
+	"github.com/netbill/auth-svc/internal/core/modules/auth"
 	"github.com/netbill/auth-svc/internal/rest/requests"
 	"github.com/netbill/restkit/roles"
 
@@ -23,7 +23,7 @@ func (s *Service) Registration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.domain.Registration(r.Context(), auth.RegistrationParams{
+	_, err = s.core.Registration(r.Context(), auth.RegistrationParams{
 		Username: req.Data.Attributes.Username,
 		Email:    req.Data.Attributes.Email,
 		Password: req.Data.Attributes.Password,

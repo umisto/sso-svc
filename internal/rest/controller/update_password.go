@@ -6,16 +6,16 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
-	"github.com/netbill/auth-svc/internal/domain/modules/auth"
-	"github.com/netbill/auth-svc/internal/rest/meta"
+	"github.com/netbill/auth-svc/internal/core/errx"
+	"github.com/netbill/auth-svc/internal/core/modules/auth"
+	"github.com/netbill/auth-svc/internal/rest"
 	"github.com/netbill/auth-svc/internal/rest/requests"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 func (s *Service) UpdatePassword(w http.ResponseWriter, r *http.Request) {
-	initiator, err := meta.AccountData(r.Context())
+	initiator, err := rest.AccountData(r.Context())
 	if err != nil {
 		s.log.WithError(err).Error("failed to get user from context")
 		ape.RenderErr(w, problems.Unauthorized("failed to get user from context"))
@@ -31,7 +31,7 @@ func (s *Service) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.domain.UpdatePassword(r.Context(), auth.InitiatorData{
+	err = s.core.UpdatePassword(r.Context(), auth.InitiatorData{
 		AccountID: initiator.ID,
 		SessionID: initiator.SessionID,
 	}, req.Data.Attributes.OldPassword, req.Data.Attributes.NewPassword)

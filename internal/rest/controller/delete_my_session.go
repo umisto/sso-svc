@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/netbill/ape"
-	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
-	"github.com/netbill/auth-svc/internal/domain/modules/auth"
-	"github.com/netbill/auth-svc/internal/rest/meta"
-
 	"github.com/go-chi/chi/v5"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
+	"github.com/netbill/ape"
+	"github.com/netbill/ape/problems"
+	"github.com/netbill/auth-svc/internal/core/errx"
+	"github.com/netbill/auth-svc/internal/core/modules/auth"
+	"github.com/netbill/auth-svc/internal/rest"
 )
 
 func (s *Service) DeleteMySession(w http.ResponseWriter, r *http.Request) {
-	initiator, err := meta.AccountData(r.Context())
+	initiator, err := rest.AccountData(r.Context())
 	if err != nil {
 		s.log.WithError(err).Error("failed to get user from context")
 		ape.RenderErr(w, problems.Unauthorized("failed to get user from context"))
@@ -35,7 +34,7 @@ func (s *Service) DeleteMySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = s.domain.DeleteOwnSession(r.Context(), auth.InitiatorData{
+	if err = s.core.DeleteOwnSession(r.Context(), auth.InitiatorData{
 		AccountID: initiator.ID,
 		SessionID: initiator.SessionID,
 	}, sessionID); err != nil {

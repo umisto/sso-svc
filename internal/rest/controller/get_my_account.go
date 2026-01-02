@@ -6,13 +6,13 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
-	"github.com/netbill/auth-svc/internal/rest/meta"
+	"github.com/netbill/auth-svc/internal/core/errx"
+	"github.com/netbill/auth-svc/internal/rest"
 	"github.com/netbill/auth-svc/internal/rest/responses"
 )
 
 func (s *Service) GetMyAccount(w http.ResponseWriter, r *http.Request) {
-	initiator, err := meta.AccountData(r.Context())
+	initiator, err := rest.AccountData(r.Context())
 	if err != nil {
 		s.log.WithError(err).Error("failed to get account from context")
 		ape.RenderErr(w, problems.Unauthorized("failed to get account from context"))
@@ -20,7 +20,7 @@ func (s *Service) GetMyAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := s.domain.GetAccountByID(r.Context(), initiator.ID)
+	account, err := s.core.GetAccountByID(r.Context(), initiator.ID)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to get account by id: %s", initiator.ID)
 		switch {

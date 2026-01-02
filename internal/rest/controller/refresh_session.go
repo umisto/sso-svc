@@ -6,7 +6,7 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
+	"github.com/netbill/auth-svc/internal/core/errx"
 	"github.com/netbill/auth-svc/internal/rest/requests"
 	"github.com/netbill/auth-svc/internal/rest/responses"
 )
@@ -20,7 +20,7 @@ func (s *Service) RefreshSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokensPair, err := s.domain.Refresh(r.Context(), req.Data.Attributes.RefreshToken)
+	tokensPair, err := s.core.Refresh(r.Context(), req.Data.Attributes.RefreshToken)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to refresh session token")
 		switch {

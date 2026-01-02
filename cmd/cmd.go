@@ -6,15 +6,15 @@ import (
 	"sync"
 
 	"github.com/netbill/auth-svc/internal"
-	"github.com/netbill/auth-svc/internal/domain/modules/auth"
+	"github.com/netbill/auth-svc/internal/core/modules/auth"
 	"github.com/netbill/auth-svc/internal/messanger/producer"
 	"github.com/netbill/auth-svc/internal/repository"
 	"github.com/netbill/auth-svc/internal/rest"
 	"github.com/netbill/auth-svc/internal/rest/controller"
-	"github.com/netbill/auth-svc/internal/rest/middlewares"
 	"github.com/netbill/auth-svc/internal/token"
 	"github.com/netbill/kafkakit/box"
 	"github.com/netbill/logium"
+	"github.com/netbill/restkit/mdlv"
 )
 
 func StartServices(ctx context.Context, cfg internal.Config, log logium.Logger, wg *sync.WaitGroup) {
@@ -47,10 +47,13 @@ func StartServices(ctx context.Context, cfg internal.Config, log logium.Logger, 
 
 	core := auth.NewService(repository, jwtTokenManager, kafkaProducer)
 
-	ctrl := controller.New(log, cfg.GoogleOAuth(), core)
-	mdlv := middlewares.New(log)
+	router := rest.New(
+		log,
+		mdlv.New(cfg.JWT.User.AccessToken.SecretKey, rest.AccountDataCtxKey),
+		controller.New(log, cfg.GoogleOAuth(), core),
+	)
 
-	run(func() { rest.Run(ctx, cfg, log, mdlv, ctrl) })
+	run(func() { router.Run(ctx, cfg) })
 
 	run(func() { kafkaProducer.Run(ctx) })
 }

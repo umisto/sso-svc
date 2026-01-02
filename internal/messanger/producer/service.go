@@ -10,7 +10,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type Service struct {
+type Producer struct {
 	log    logium.Logger
 	addr   []string
 	outbox outbox
@@ -19,7 +19,6 @@ type Service struct {
 type outbox interface {
 	CreateOutboxEvent(
 		ctx context.Context,
-		status string,
 		message kafka.Message,
 	) (box.OutboxEvent, error)
 
@@ -30,8 +29,8 @@ type outbox interface {
 	MarkOutboxEventsAsPending(ctx context.Context, ids []uuid.UUID, delay time.Duration) ([]box.OutboxEvent, error)
 }
 
-func New(log logium.Logger, addr []string, outbox outbox) *Service {
-	return &Service{
+func New(log logium.Logger, addr []string, outbox outbox) *Producer {
+	return &Producer{
 		log:    log,
 		addr:   addr,
 		outbox: outbox,
@@ -40,12 +39,12 @@ func New(log logium.Logger, addr []string, outbox outbox) *Service {
 
 const eventOutboxRetryDelay = 1 * time.Minute
 
-func (s Service) Run(ctx context.Context) {
+func (p Producer) Run(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
 	publisher := kafka.Writer{
-		Addr:         kafka.TCP(s.addr...),
+		Addr:         kafka.TCP(p.addr...),
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireAll,
 		Compression:  kafka.Snappy,
@@ -57,9 +56,9 @@ func (s Service) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			events, err := s.outbox.GetPendingOutboxEvents(ctx, 100)
+			events, err := p.outbox.GetPendingOutboxEvents(ctx, 100)
 			if err != nil {
-				s.log.Errorf("outbox.GetPendingOutboxEvents: %v", err)
+				p.log.Errorf("outbox.GetPendingOutboxEvents: %v", err)
 				continue
 			}
 
@@ -70,23 +69,23 @@ func (s Service) Run(ctx context.Context) {
 				err = publisher.WriteMessages(ctx, event.ToMessage())
 				if err != nil {
 					NonSentIDs = append(NonSentIDs, event.ID)
-					s.log.Debugf("outbox: publish event ID %s: %v", event.ID, err)
+					p.log.Debugf("outbox: publish event ID %p: %v", event.ID, err)
 					continue
 				}
 				sentIDs = append(sentIDs, event.ID)
 			}
 
 			if len(sentIDs) > 0 {
-				_, err = s.outbox.MarkOutboxEventsSent(ctx, sentIDs)
+				_, err = p.outbox.MarkOutboxEventsSent(ctx, sentIDs)
 				if err != nil {
-					s.log.Debugf("outbox: mark events as sent: %v", err)
+					p.log.Debugf("outbox: mark events as sent: %v", err)
 				}
 			}
 
 			if len(NonSentIDs) > 0 {
-				_, err = s.outbox.MarkOutboxEventsAsPending(ctx, NonSentIDs, eventOutboxRetryDelay)
+				_, err = p.outbox.MarkOutboxEventsAsPending(ctx, NonSentIDs, eventOutboxRetryDelay)
 				if err != nil {
-					s.log.Debugf("outbox: delay events: %v", err)
+					p.log.Debugf("outbox: delay events: %v", err)
 				}
 			}
 		}

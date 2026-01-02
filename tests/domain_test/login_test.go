@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/netbill/auth-svc/internal/domain/errx"
+	"github.com/netbill/auth-svc/internal/core/errx"
 	"github.com/netbill/restkit/roles"
 )
 

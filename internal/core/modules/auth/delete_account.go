@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/netbill/auth-svc/internal/domain/errx"
+	"github.com/netbill/auth-svc/internal/core/errx"
 )
 
 func (s Service) DeleteOwnAccount(ctx context.Context, initiator InitiatorData) error {

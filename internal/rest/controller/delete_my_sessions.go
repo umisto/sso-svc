@@ -6,13 +6,13 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
-	"github.com/netbill/auth-svc/internal/domain/modules/auth"
-	"github.com/netbill/auth-svc/internal/rest/meta"
+	"github.com/netbill/auth-svc/internal/core/errx"
+	"github.com/netbill/auth-svc/internal/core/modules/auth"
+	"github.com/netbill/auth-svc/internal/rest"
 )
 
 func (s *Service) DeleteMySessions(w http.ResponseWriter, r *http.Request) {
-	initiator, err := meta.AccountData(r.Context())
+	initiator, err := rest.AccountData(r.Context())
 	if err != nil {
 		s.log.WithError(err).Error("failed to get account from context")
 		ape.RenderErr(w, problems.Unauthorized("failed to get account from context"))
@@ -20,7 +20,7 @@ func (s *Service) DeleteMySessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = s.domain.DeleteOwnSessions(r.Context(), auth.InitiatorData{
+	if err = s.core.DeleteOwnSessions(r.Context(), auth.InitiatorData{
 		AccountID: initiator.ID,
 		SessionID: initiator.SessionID,
 	}); err != nil {

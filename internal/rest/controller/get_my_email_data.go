@@ -6,13 +6,13 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
-	"github.com/netbill/auth-svc/internal/rest/meta"
+	"github.com/netbill/auth-svc/internal/core/errx"
+	"github.com/netbill/auth-svc/internal/rest"
 	"github.com/netbill/auth-svc/internal/rest/responses"
 )
 
 func (s *Service) GetMyEmailData(w http.ResponseWriter, r *http.Request) {
-	initiator, err := meta.AccountData(r.Context())
+	initiator, err := rest.AccountData(r.Context())
 	if err != nil {
 		s.log.WithError(err).Error("failed to get user from context")
 		ape.RenderErr(w, problems.Unauthorized("failed to get user from context"))
@@ -20,7 +20,7 @@ func (s *Service) GetMyEmailData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	emailData, err := s.domain.GetAccountEmail(r.Context(), initiator.ID)
+	emailData, err := s.core.GetAccountEmail(r.Context(), initiator.ID)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to get email repo by id: %s", initiator.ID)
 		switch {

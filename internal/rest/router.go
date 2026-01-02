@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/netbill/auth-svc/internal"
-	"github.com/netbill/auth-svc/internal/rest/meta"
 	"github.com/netbill/logium"
 	"github.com/netbill/restkit/roles"
 )
@@ -40,13 +39,31 @@ type Handlers interface {
 }
 
 type Middlewares interface {
-	Auth(userCtxKey interface{}, skUser string) func(http.Handler) http.Handler
-	RoleGrant(userCtxKey interface{}, allowedRoles map[string]bool) func(http.Handler) http.Handler
+	Auth() func(http.Handler) http.Handler
+	RoleGrant(allowedRoles map[string]bool) func(http.Handler) http.Handler
 }
 
-func Run(ctx context.Context, cfg internal.Config, log logium.Logger, m Middlewares, h Handlers) {
-	auth := m.Auth(meta.AccountDataCtxKey, cfg.JWT.User.AccessToken.SecretKey)
-	sysadmin := m.RoleGrant(meta.AccountDataCtxKey, map[string]bool{
+type Service struct {
+	handlers    Handlers
+	middlewares Middlewares
+	log         logium.Logger
+}
+
+func New(
+	log logium.Logger,
+	middlewares Middlewares,
+	handlers Handlers,
+) *Service {
+	return &Service{
+		log:         log,
+		middlewares: middlewares,
+		handlers:    handlers,
+	}
+}
+
+func (s *Service) Run(ctx context.Context, cfg internal.Config) {
+	auth := s.middlewares.Auth()
+	sysadmin := s.middlewares.RoleGrant(map[string]bool{
 		roles.SystemAdmin: true,
 	})
 
@@ -54,36 +71,36 @@ func Run(ctx context.Context, cfg internal.Config, log logium.Logger, m Middlewa
 
 	r.Route("/auth-svc", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			r.Post("/registration", h.Registration)
+			r.Post("/registration", s.handlers.Registration)
 
 			r.Route("/login", func(r chi.Router) {
-				r.Post("/email", h.LoginByEmail)
-				r.Post("/username", h.LoginByUsername)
+				r.Post("/email", s.handlers.LoginByEmail)
+				r.Post("/username", s.handlers.LoginByUsername)
 
 				r.Route("/google", func(r chi.Router) {
-					r.Post("/", h.LoginByGoogleOAuth)
-					r.Post("/callback", h.LoginByGoogleOAuthCallback)
+					r.Post("/", s.handlers.LoginByGoogleOAuth)
+					r.Post("/callback", s.handlers.LoginByGoogleOAuthCallback)
 				})
 			})
 
-			r.Post("/refresh", h.RefreshSession)
+			r.Post("/refresh", s.handlers.RefreshSession)
 
 			r.With(auth).Route("/me", func(r chi.Router) {
-				r.With(auth).Get("/", h.GetMyAccount)
-				r.With(auth).Delete("/", h.DeleteMyAccount)
+				r.With(auth).Get("/", s.handlers.GetMyAccount)
+				r.With(auth).Delete("/", s.handlers.DeleteMyAccount)
 
-				r.With(auth).Get("/email", h.GetMyEmailData)
-				r.With(auth).Post("/logout", h.Logout)
-				r.With(auth).Post("/password", h.UpdatePassword)
-				r.With(auth).Post("/username", h.UpdateUsername)
+				r.With(auth).Get("/email", s.handlers.GetMyEmailData)
+				r.With(auth).Post("/logout", s.handlers.Logout)
+				r.With(auth).Post("/password", s.handlers.UpdatePassword)
+				r.With(auth).Post("/username", s.handlers.UpdateUsername)
 
 				r.With(auth).Route("/sessions", func(r chi.Router) {
-					r.Get("/", h.GetMySessions)
-					r.Delete("/", h.DeleteMySessions)
+					r.Get("/", s.handlers.GetMySessions)
+					r.Delete("/", s.handlers.DeleteMySessions)
 
 					r.Route("/{session_id}", func(r chi.Router) {
-						r.Get("/", h.GetMySession)
-						r.Delete("/", h.DeleteMySession)
+						r.Get("/", s.handlers.GetMySession)
+						r.Delete("/", s.handlers.DeleteMySession)
 					})
 				})
 			})
@@ -92,7 +109,7 @@ func Run(ctx context.Context, cfg internal.Config, log logium.Logger, m Middlewa
 				r.Use(auth)
 				r.Use(sysadmin)
 
-				r.Post("/", h.RegistrationAdmin)
+				r.Post("/", s.handlers.RegistrationAdmin)
 			})
 		})
 	})
@@ -106,7 +123,7 @@ func Run(ctx context.Context, cfg internal.Config, log logium.Logger, m Middlewa
 		IdleTimeout:       cfg.Rest.Timeouts.Idle,
 	}
 
-	log.Infof("starting REST service on %s", cfg.Rest.Port)
+	s.log.Infof("starting REST service on %s", cfg.Rest.Port)
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -119,18 +136,18 @@ func Run(ctx context.Context, cfg internal.Config, log logium.Logger, m Middlewa
 
 	select {
 	case <-ctx.Done():
-		log.Info("shutting down REST service...")
+		s.log.Info("shutting down REST service...")
 	case err := <-errCh:
 		if err != nil {
-			log.Errorf("REST server error: %v", err)
+			s.log.Errorf("REST server error: %v", err)
 		}
 	}
 
 	shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shCtx); err != nil {
-		log.Errorf("REST shutdown error: %v", err)
+		s.log.Errorf("REST shutdown error: %v", err)
 	} else {
-		log.Info("REST server stopped")
+		s.log.Info("REST server stopped")
 	}
 }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/netbill/auth-svc/internal/domain/errx"
-	"github.com/netbill/auth-svc/internal/domain/models"
+	"github.com/netbill/auth-svc/internal/core/errx"
+	"github.com/netbill/auth-svc/internal/core/models"
 )
 
 // VerifyEmail is a callback function to verify email addresses, which we should use in Kafka consumer

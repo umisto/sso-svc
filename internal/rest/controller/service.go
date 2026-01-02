@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/netbill/auth-svc/internal/domain/models"
-	"github.com/netbill/auth-svc/internal/domain/modules/auth"
+	"github.com/netbill/auth-svc/internal/core/models"
+	"github.com/netbill/auth-svc/internal/core/modules/auth"
 	"github.com/netbill/logium"
 	"github.com/netbill/pagi"
 	"golang.org/x/oauth2"
@@ -59,7 +59,7 @@ type core interface {
 
 type Service struct {
 	google oauth2.Config
-	domain core
+	core   core
 	log    logium.Logger
 }
 
@@ -67,6 +67,6 @@ func New(log logium.Logger, google oauth2.Config, domain core) *Service {
 	return &Service{
 		log:    log,
 		google: google,
-		domain: domain,
+		core:   domain,
 	}
 }

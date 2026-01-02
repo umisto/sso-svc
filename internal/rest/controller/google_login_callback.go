@@ -9,7 +9,7 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
+	"github.com/netbill/auth-svc/internal/core/errx"
 	"github.com/netbill/auth-svc/internal/rest/responses"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -61,7 +61,7 @@ func (s *Service) LoginByGoogleOAuthCallback(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	tokensPair, err := s.domain.LoginByGoogle(r.Context(), userInfo.Email)
+	tokensPair, err := s.core.LoginByGoogle(r.Context(), userInfo.Email)
 	if err != nil {
 		s.log.WithError(err).Errorf("error logging in user: %s", userInfo.Email)
 		switch {

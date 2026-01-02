@@ -1,3 +1,3 @@
 package contracts
 
-const SsoSvcGroup = "auth-svc"
+const AuthSvcGroup = "auth-svc"

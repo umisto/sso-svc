@@ -6,7 +6,7 @@ import (
 
 	"github.com/netbill/ape"
 	"github.com/netbill/ape/problems"
-	"github.com/netbill/auth-svc/internal/domain/errx"
+	"github.com/netbill/auth-svc/internal/core/errx"
 	"github.com/netbill/auth-svc/internal/rest/requests"
 	"github.com/netbill/auth-svc/internal/rest/responses"
 )
@@ -20,7 +20,7 @@ func (s *Service) LoginByUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := s.domain.LoginByUsername(r.Context(), req.Data.Attributes.Username, req.Data.Attributes.Password)
+	token, err := s.core.LoginByUsername(r.Context(), req.Data.Attributes.Username, req.Data.Attributes.Password)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to login user")
 		switch {
