@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/netbill/auth-svc/internal/core/models"
@@ -14,17 +13,11 @@ import (
 )
 
 func (r Repository) CreateSession(ctx context.Context, sessionID, accountID uuid.UUID, hashToken string) (models.Session, error) {
-	now := time.Now().UTC()
-
-	row := pgdb.Session{
+	row, err := r.sessionsQ(ctx).Insert(ctx, pgdb.InsertSessionParams{
 		ID:        sessionID,
 		AccountID: accountID,
 		HashToken: hashToken,
-		LastUsed:  now,
-		CreatedAt: now,
-	}
-
-	err := r.sessionsQ().Insert(ctx, row)
+	})
 	if err != nil {
 		return models.Session{}, err
 	}
@@ -33,7 +26,7 @@ func (r Repository) CreateSession(ctx context.Context, sessionID, accountID uuid
 }
 
 func (r Repository) GetSession(ctx context.Context, sessionID uuid.UUID) (models.Session, error) {
-	row, err := r.sessionsQ().FilterID(sessionID).Get(ctx)
+	row, err := r.sessionsQ(ctx).FilterID(sessionID).Get(ctx)
 	switch {
 	case err != nil:
 		return models.Session{}, err
@@ -45,7 +38,7 @@ func (r Repository) GetSession(ctx context.Context, sessionID uuid.UUID) (models
 }
 
 func (r Repository) GetAccountSession(ctx context.Context, userID, sessionID uuid.UUID) (models.Session, error) {
-	row, err := r.sessionsQ().
+	row, err := r.sessionsQ(ctx).
 		FilterID(sessionID).
 		FilterAccountID(userID).
 		Get(ctx)
@@ -60,7 +53,7 @@ func (r Repository) GetAccountSession(ctx context.Context, userID, sessionID uui
 }
 
 func (r Repository) GetSessionsForAccount(ctx context.Context, userID uuid.UUID, limit, offset uint) (pagi.Page[[]models.Session], error) {
-	rows, err := r.sessionsQ().
+	rows, err := r.sessionsQ(ctx).
 		FilterAccountID(userID).
 		OrderCreatedAt(false).
 		Page(limit, offset).
@@ -69,7 +62,7 @@ func (r Repository) GetSessionsForAccount(ctx context.Context, userID uuid.UUID,
 		return pagi.Page[[]models.Session]{}, err
 	}
 
-	total, err := r.sessionsQ().
+	total, err := r.sessionsQ(ctx).
 		FilterAccountID(userID).
 		Count(ctx)
 	if err != nil {
@@ -90,7 +83,7 @@ func (r Repository) GetSessionsForAccount(ctx context.Context, userID uuid.UUID,
 }
 
 func (r Repository) GetSessionToken(ctx context.Context, sessionID uuid.UUID) (string, error) {
-	row, err := r.sessionsQ().FilterID(sessionID).Get(ctx)
+	row, err := r.sessionsQ(ctx).FilterID(sessionID).Get(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return "", nil
@@ -102,7 +95,7 @@ func (r Repository) GetSessionToken(ctx context.Context, sessionID uuid.UUID) (s
 }
 
 func (r Repository) UpdateSessionToken(ctx context.Context, sessionID uuid.UUID, token string) (models.Session, error) {
-	sess, err := r.sessionsQ().
+	sess, err := r.sessionsQ(ctx).
 		FilterID(sessionID).
 		UpdateToken(token).
 		Update(ctx)
@@ -120,15 +113,15 @@ func (r Repository) UpdateSessionToken(ctx context.Context, sessionID uuid.UUID,
 }
 
 func (r Repository) DeleteSession(ctx context.Context, sessionID uuid.UUID) error {
-	return r.sessionsQ().FilterID(sessionID).Delete(ctx)
+	return r.sessionsQ(ctx).FilterID(sessionID).Delete(ctx)
 }
 
 func (r Repository) DeleteSessionsForAccount(ctx context.Context, userID uuid.UUID) error {
-	return r.sessionsQ().FilterAccountID(userID).Delete(ctx)
+	return r.sessionsQ(ctx).FilterAccountID(userID).Delete(ctx)
 }
 
 func (r Repository) DeleteAccountSession(ctx context.Context, userID, sessionID uuid.UUID) error {
-	return r.sessionsQ().
+	return r.sessionsQ(ctx).
 		FilterID(sessionID).
 		FilterAccountID(userID).
 		Delete(ctx)

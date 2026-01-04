@@ -51,6 +51,8 @@ func (p Producer) Run(ctx context.Context) {
 		BatchTimeout: 50 * time.Millisecond,
 	}
 
+	p.log.Info("outbox: producer started addr: %s, publisher: %s", p.addr, publisher.Addr)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -72,6 +74,7 @@ func (p Producer) Run(ctx context.Context) {
 					p.log.Debugf("outbox: publish event ID %p: %v", event.ID, err)
 					continue
 				}
+
 				sentIDs = append(sentIDs, event.ID)
 			}
 

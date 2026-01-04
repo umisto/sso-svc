@@ -18,20 +18,20 @@ func New(db *sql.DB) *Repository {
 	}
 }
 
-func (r Repository) accountsQ() pgdb.AccountsQ {
-	return pgdb.NewAccountsQ(r.db)
+func (r Repository) accountsQ(ctx context.Context) pgdb.AccountsQ {
+	return pgdb.NewAccountsQ(pgx.Exec(r.db, ctx))
 }
 
-func (r Repository) sessionsQ() pgdb.SessionsQ {
-	return pgdb.NewSessionsQ(r.db)
+func (r Repository) sessionsQ(ctx context.Context) pgdb.SessionsQ {
+	return pgdb.NewSessionsQ(pgx.Exec(r.db, ctx))
 }
 
-func (r Repository) passwordsQ() pgdb.AccountPasswordsQ {
-	return pgdb.NewAccountPasswordsQ(r.db)
+func (r Repository) passwordsQ(ctx context.Context) pgdb.AccountPasswordsQ {
+	return pgdb.NewAccountPasswordsQ(pgx.Exec(r.db, ctx))
 }
 
-func (r Repository) emailsQ() pgdb.AccountEmailsQ {
-	return pgdb.NewAccountEmailsQ(r.db)
+func (r Repository) emailsQ(ctx context.Context) pgdb.AccountEmailsQ {
+	return pgdb.NewAccountEmailsQ(pgx.Exec(r.db, ctx))
 }
 
 func (r Repository) Transaction(ctx context.Context, fn func(ctx context.Context) error) error {

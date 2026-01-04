@@ -11,28 +11,26 @@ import (
 	"github.com/netbill/auth-svc/internal/core/models"
 	"github.com/netbill/auth-svc/internal/core/modules/auth"
 	"github.com/netbill/auth-svc/internal/repository/pgdb"
+	"github.com/sirupsen/logrus"
 )
 
 func (r Repository) CreateAccount(ctx context.Context, params auth.CreateAccountParams) (models.Account, error) {
 	now := time.Now().UTC()
 	accountID := uuid.New()
 
-	acc := pgdb.Account{
-		ID:                accountID,
-		Username:          params.Username,
-		Role:              params.Role,
-		Status:            models.AccountStatusActive,
-		CreatedAt:         now,
-		UpdatedAt:         now,
-		UsernameUpdatedAt: now,
-	}
+	logrus.Infof("Creating account with ID: %s", accountID)
 
-	account := acc.ToModel()
-
-	err := r.accountsQ().Insert(ctx, acc)
+	account, err := r.accountsQ(ctx).Insert(ctx, pgdb.InsertAccountParams{
+		ID:       accountID,
+		Username: params.Username,
+		Role:     params.Role,
+		Status:   models.AccountStatusActive,
+	})
 	if err != nil {
 		return models.Account{}, err
 	}
+
+	logrus.Infof("Account created with ID: %s", accountID)
 
 	emailRow := pgdb.AccountEmail{
 		AccountID: accountID,
@@ -42,10 +40,12 @@ func (r Repository) CreateAccount(ctx context.Context, params auth.CreateAccount
 		UpdatedAt: now,
 	}
 
-	err = r.emailsQ().Insert(ctx, emailRow)
+	err = r.emailsQ(ctx).Insert(ctx, emailRow)
 	if err != nil {
 		return models.Account{}, err
 	}
+
+	logrus.Infof("Email record created for account ID: %s", accountID)
 
 	passwordRow := pgdb.AccountPassword{
 		AccountID: accountID,
@@ -54,16 +54,18 @@ func (r Repository) CreateAccount(ctx context.Context, params auth.CreateAccount
 		UpdatedAt: now,
 	}
 
-	err = r.passwordsQ().Insert(ctx, passwordRow)
+	err = r.passwordsQ(ctx).Insert(ctx, passwordRow)
 	if err != nil {
 		return models.Account{}, err
 	}
 
-	return account, err
+	logrus.Infof("Password record created for account ID: %s", accountID)
+
+	return account.ToModel(), err
 }
 
 func (r Repository) GetAccountByID(ctx context.Context, accountID uuid.UUID) (models.Account, error) {
-	acc, err := r.accountsQ().FilterID(accountID).Get(ctx)
+	acc, err := r.accountsQ(ctx).FilterID(accountID).Get(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return models.Account{}, nil
@@ -75,7 +77,7 @@ func (r Repository) GetAccountByID(ctx context.Context, accountID uuid.UUID) (mo
 }
 
 func (r Repository) GetAccountByUsername(ctx context.Context, username string) (models.Account, error) {
-	acc, err := r.accountsQ().FilterUsername(username).Get(ctx)
+	acc, err := r.accountsQ(ctx).FilterUsername(username).Get(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return models.Account{}, nil
@@ -87,7 +89,7 @@ func (r Repository) GetAccountByUsername(ctx context.Context, username string) (
 }
 
 func (r Repository) GetAccountByEmail(ctx context.Context, email string) (models.Account, error) {
-	acc, err := r.accountsQ().FilterEmail(email).Get(ctx)
+	acc, err := r.accountsQ(ctx).FilterEmail(email).Get(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return models.Account{}, nil
@@ -101,7 +103,7 @@ func (r Repository) GetAccountByEmail(ctx context.Context, email string) (models
 func (r Repository) UpdateAccountUsername(ctx context.Context, accountID uuid.UUID, newUsername string) (models.Account, error) {
 	var account models.Account
 
-	accs, err := r.accountsQ().
+	accs, err := r.accountsQ(ctx).
 		FilterID(accountID).
 		UpdateUsername(newUsername, time.Now().UTC()).
 		Update(ctx)
@@ -119,7 +121,7 @@ func (r Repository) UpdateAccountUsername(ctx context.Context, accountID uuid.UU
 }
 
 func (r Repository) UpdateAccountStatus(ctx context.Context, accountID uuid.UUID, status string) (models.Account, error) {
-	accs, err := r.accountsQ().
+	accs, err := r.accountsQ(ctx).
 		FilterID(accountID).
 		UpdateStatus(status).
 		Update(ctx)
@@ -134,7 +136,7 @@ func (r Repository) UpdateAccountStatus(ctx context.Context, accountID uuid.UUID
 }
 
 func (r Repository) GetAccountEmail(ctx context.Context, accountID uuid.UUID) (models.AccountEmail, error) {
-	acc, err := r.emailsQ().FilterAccountID(accountID).Get(ctx)
+	acc, err := r.emailsQ(ctx).FilterAccountID(accountID).Get(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return models.AccountEmail{}, nil
@@ -150,7 +152,7 @@ func (r Repository) UpdateAccountEmailVerification(
 	accountID uuid.UUID,
 	verified bool,
 ) (models.AccountEmail, error) {
-	accs, err := r.emailsQ().
+	accs, err := r.emailsQ(ctx).
 		FilterAccountID(accountID).
 		UpdateVerified(verified).
 		Update(ctx)
@@ -165,7 +167,7 @@ func (r Repository) UpdateAccountEmailVerification(
 }
 
 func (r Repository) GetAccountPassword(ctx context.Context, accountID uuid.UUID) (models.AccountPassword, error) {
-	acc, err := r.passwordsQ().FilterAccountID(accountID).Get(ctx)
+	acc, err := r.passwordsQ(ctx).FilterAccountID(accountID).Get(ctx)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return models.AccountPassword{}, nil
@@ -181,7 +183,7 @@ func (r Repository) UpdateAccountPassword(
 	accountID uuid.UUID,
 	passwordHash string,
 ) (models.AccountPassword, error) {
-	accs, err := r.passwordsQ().
+	accs, err := r.passwordsQ(ctx).
 		FilterAccountID(accountID).
 		UpdateHash(passwordHash).
 		Update(ctx)
@@ -197,5 +199,5 @@ func (r Repository) UpdateAccountPassword(
 }
 
 func (r Repository) DeleteAccount(ctx context.Context, accountID uuid.UUID) error {
-	return r.accountsQ().FilterID(accountID).Delete(ctx)
+	return r.accountsQ(ctx).FilterID(accountID).Delete(ctx)
 }

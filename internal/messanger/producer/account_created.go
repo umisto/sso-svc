@@ -24,7 +24,7 @@ func (p Producer) WriteAccountCreated(
 		return err
 	}
 
-	_, err = p.outbox.CreateOutboxEvent(
+	eve, err := p.outbox.CreateOutboxEvent(
 		ctx,
 		kafka.Message{
 			Topic: contracts.AccountsTopicV1,
@@ -39,6 +39,11 @@ func (p Producer) WriteAccountCreated(
 			},
 		},
 	)
+	if err != nil {
+		return err
+	}
+
+	p.log.Infof("Produced AccountCreated event for account ID '%s'", eve.ID)
 
 	return err
 }

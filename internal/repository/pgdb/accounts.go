@@ -61,24 +61,50 @@ func NewAccountsQ(db pgx.DBTX) AccountsQ {
 	}
 }
 
-func (q AccountsQ) Insert(ctx context.Context, input Account) error {
-	values := map[string]interface{}{
-		"id":                  input.ID,
-		"username":            input.Username,
-		"role":                input.Role,
-		"status":              input.Status,
-		"created_at":          input.CreatedAt,
-		"updated_at":          input.UpdatedAt,
-		"username_updated_at": input.UsernameUpdatedAt,
-	}
+type InsertAccountParams struct {
+	ID       uuid.UUID
+	Username string
+	Role     string
+	Status   string
+}
 
-	query, args, err := q.inserter.SetMap(values).ToSql()
+func (q AccountsQ) Insert(ctx context.Context, input InsertAccountParams) (Account, error) {
+	query, args, err := q.inserter.SetMap(map[string]interface{}{
+		"id":       input.ID,
+		"username": input.Username,
+		"role":     input.Role,
+		"status":   input.Status,
+	}).Suffix("RETURNING id, username, role, status, created_at, updated_at, username_updated_at").ToSql()
 	if err != nil {
-		return fmt.Errorf("building insert query for %s: %w", accountsTable, err)
+		return Account{}, fmt.Errorf("building insert query for %s: %w", accountsTable, err)
 	}
 
-	_, err = q.db.ExecContext(ctx, query, args...)
-	return err
+	var out Account
+	row := q.db.QueryRowContext(ctx, query, args...)
+	if err = out.scan(row); err != nil {
+		return Account{}, err
+	}
+	return out, nil
+}
+
+func (q AccountsQ) Get(ctx context.Context) (Account, error) {
+	query, args, err := q.selector.Limit(1).ToSql()
+	if err != nil {
+		return Account{}, fmt.Errorf("building get query for %s: %w", accountsTable, err)
+	}
+
+	row := q.db.QueryRowContext(ctx, query, args...)
+
+	var a Account
+	err = a.scan(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Account{}, nil
+		}
+		return Account{}, err
+	}
+
+	return a, nil
 }
 
 func (q AccountsQ) Update(ctx context.Context) ([]Account, error) {
@@ -125,26 +151,6 @@ func (q AccountsQ) UpdateUsername(username string, usernameUpdatedAt time.Time) 
 		Set("username", username).
 		Set("username_updated_at", usernameUpdatedAt)
 	return q
-}
-
-func (q AccountsQ) Get(ctx context.Context) (Account, error) {
-	query, args, err := q.selector.Limit(1).ToSql()
-	if err != nil {
-		return Account{}, fmt.Errorf("building get query for %s: %w", accountsTable, err)
-	}
-
-	row := q.db.QueryRowContext(ctx, query, args...)
-
-	var a Account
-	err = a.scan(row)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return Account{}, nil
-		}
-		return Account{}, err
-	}
-
-	return a, nil
 }
 
 func (q AccountsQ) Select(ctx context.Context) ([]Account, error) {

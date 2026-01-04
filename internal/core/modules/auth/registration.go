@@ -67,7 +67,7 @@ func (s Service) Registration(
 	}
 
 	var account models.Account
-	err = s.repo.Transaction(ctx, func(txCtx context.Context) error {
+	err = s.repo.Transaction(ctx, func(ctx context.Context) error {
 		account, err = s.repo.CreateAccount(ctx, CreateAccountParams{
 			Username:     params.Username,
 			Role:         params.Role,
@@ -89,6 +89,9 @@ func (s Service) Registration(
 
 		return nil
 	})
+	if err != nil {
+		return models.Account{}, err
+	}
 
 	return account, nil
 }

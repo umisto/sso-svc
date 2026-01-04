@@ -32,12 +32,15 @@ func (s *Service) RegistrationAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := s.core.Registration(r.Context(), auth.RegistrationParams{
-		Username: req.Data.Attributes.Username,
-		Email:    req.Data.Attributes.Email,
-		Password: req.Data.Attributes.Password,
-		Role:     req.Data.Attributes.Role,
-	})
+	u, err := s.core.RegistrationByAdmin(r.Context(),
+		initiator.ID,
+		auth.RegistrationParams{
+			Username: req.Data.Attributes.Username,
+			Email:    req.Data.Attributes.Email,
+			Password: req.Data.Attributes.Password,
+			Role:     req.Data.Attributes.Role,
+		},
+	)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to register by admin")
 		switch {

@@ -45,7 +45,7 @@ type SessionsQ struct {
 	counter  sq.SelectBuilder
 }
 
-func NewSessionsQ(db *sql.DB) SessionsQ {
+func NewSessionsQ(db pgx.DBTX) SessionsQ {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	return SessionsQ{
 		db:       db,
@@ -57,22 +57,29 @@ func NewSessionsQ(db *sql.DB) SessionsQ {
 	}
 }
 
-func (q SessionsQ) Insert(ctx context.Context, input Session) error {
-	values := map[string]interface{}{
+type InsertSessionParams struct {
+	ID        uuid.UUID
+	AccountID uuid.UUID
+	HashToken string
+}
+
+func (q SessionsQ) Insert(ctx context.Context, input InsertSessionParams) (Session, error) {
+	query, args, err := q.inserter.SetMap(map[string]interface{}{
 		"id":         input.ID,
 		"account_id": input.AccountID,
 		"hash_token": input.HashToken,
-		"last_used":  input.LastUsed,
-		"created_at": input.CreatedAt,
-	}
-
-	query, args, err := q.inserter.SetMap(values).ToSql()
+	}).Suffix("RETURNING id, account_id, hash_token, last_used, created_at").ToSql()
 	if err != nil {
-		return fmt.Errorf("building insert query for %s: %w", sessionsTable, err)
+		return Session{}, fmt.Errorf("building insert query for %s: %w", sessionsTable, err)
 	}
 
-	_, err = q.db.ExecContext(ctx, query, args...)
-	return err
+	var sess Session
+	err = sess.scan(q.db.QueryRowContext(ctx, query, args...))
+	if err != nil {
+		return Session{}, err
+	}
+
+	return sess, nil
 }
 
 func (q SessionsQ) Update(ctx context.Context) ([]Session, error) {
