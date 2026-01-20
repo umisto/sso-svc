@@ -1,18 +1,18 @@
 package token
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
-	"encoding/hex"
-	"errors"
-	"io"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
 	"time"
 )
 
 type Service struct {
 	accessSK  string
 	refreshSK string
+	refreshHK string
 
 	accessTTL  time.Duration
 	refreshTTL time.Duration
@@ -23,6 +23,7 @@ type Service struct {
 type Config struct {
 	AccessSK  string
 	RefreshSK string
+	RefreshHK string
 
 	AccessTTL  time.Duration
 	RefreshTTL time.Duration
@@ -32,54 +33,29 @@ type Config struct {
 
 func NewManager(cfg Config) Service {
 	return Service{
-		accessSK:  cfg.AccessSK,
-		refreshSK: cfg.RefreshSK,
-
+		accessSK:   cfg.AccessSK,
+		refreshSK:  cfg.RefreshSK,
+		refreshHK:  cfg.RefreshHK,
 		accessTTL:  cfg.AccessTTL,
 		refreshTTL: cfg.RefreshTTL,
-
-		iss: cfg.Iss,
+		iss:        cfg.Iss,
 	}
 }
 
-func newGCM(key []byte) (cipher.AEAD, error) {
-	block, err := aes.NewCipher(key)
+func generateOpaque(n int) (string, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return cipher.NewGCM(block)
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-func encryptAESGCM(plain string, key []byte) (string, error) {
-	gcm, err := newGCM(key)
-	if err != nil {
-		return "", err
+func hmacB64(msg string, secret string) (string, error) {
+	if secret == "" {
+		return "", fmt.Errorf("empty secret")
 	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
-	}
-	// Пишем nonce в начало шифртекста (как ты и делал)
-	ct := gcm.Seal(nonce, nonce, []byte(plain), nil)
-	return hex.EncodeToString(ct), nil
-}
-
-func decryptAESGCM(encHex string, key []byte) (string, error) {
-	gcm, err := newGCM(key)
-	if err != nil {
-		return "", err
-	}
-	ct, err := hex.DecodeString(encHex)
-	if err != nil {
-		return "", err
-	}
-	if len(ct) < gcm.NonceSize() {
-		return "", errors.New("ciphertext too short")
-	}
-	nonce, ciphertext := ct[:gcm.NonceSize()], ct[gcm.NonceSize():]
-	pt, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return "", err
-	}
-	return string(pt), nil
+	m := hmac.New(sha256.New, []byte(secret))
+	_, _ = m.Write([]byte(msg))
+	return base64.RawURLEncoding.EncodeToString(m.Sum(nil)), nil
 }

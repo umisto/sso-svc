@@ -21,12 +21,16 @@ var _ MappedNullable = &PaginationData{}
 
 // PaginationData struct for PaginationData
 type PaginationData struct {
-	// The current page number.
-	PageNumber int64 `json:"page_number"`
-	// The number of items per page.
-	PageSize int64 `json:"page_size"`
-	// The total number of items available.
-	TotalItems int64 `json:"total_items"`
+	// link to the current page
+	Self string `json:"self"`
+	// link to the first page
+	First *string `json:"first,omitempty"`
+	// link to the last page
+	Last *string `json:"last,omitempty"`
+	// link to the previous page
+	Prev *string `json:"prev,omitempty"`
+	// link to the next page
+	Next *string `json:"next,omitempty"`
 }
 
 type _PaginationData PaginationData
@@ -35,11 +39,9 @@ type _PaginationData PaginationData
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewPaginationData(pageNumber int64, pageSize int64, totalItems int64) *PaginationData {
+func NewPaginationData(self string) *PaginationData {
 	this := PaginationData{}
-	this.PageNumber = pageNumber
-	this.PageSize = pageSize
-	this.TotalItems = totalItems
+	this.Self = self
 	return &this
 }
 
@@ -51,76 +53,156 @@ func NewPaginationDataWithDefaults() *PaginationData {
 	return &this
 }
 
-// GetPageNumber returns the PageNumber field value
-func (o *PaginationData) GetPageNumber() int64 {
+// GetSelf returns the Self field value
+func (o *PaginationData) GetSelf() string {
 	if o == nil {
-		var ret int64
+		var ret string
 		return ret
 	}
 
-	return o.PageNumber
+	return o.Self
 }
 
-// GetPageNumberOk returns a tuple with the PageNumber field value
+// GetSelfOk returns a tuple with the Self field value
 // and a boolean to check if the value has been set.
-func (o *PaginationData) GetPageNumberOk() (*int64, bool) {
+func (o *PaginationData) GetSelfOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.PageNumber, true
+	return &o.Self, true
 }
 
-// SetPageNumber sets field value
-func (o *PaginationData) SetPageNumber(v int64) {
-	o.PageNumber = v
+// SetSelf sets field value
+func (o *PaginationData) SetSelf(v string) {
+	o.Self = v
 }
 
-// GetPageSize returns the PageSize field value
-func (o *PaginationData) GetPageSize() int64 {
-	if o == nil {
-		var ret int64
+// GetFirst returns the First field value if set, zero value otherwise.
+func (o *PaginationData) GetFirst() string {
+	if o == nil || IsNil(o.First) {
+		var ret string
 		return ret
 	}
-
-	return o.PageSize
+	return *o.First
 }
 
-// GetPageSizeOk returns a tuple with the PageSize field value
+// GetFirstOk returns a tuple with the First field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *PaginationData) GetPageSizeOk() (*int64, bool) {
-	if o == nil {
+func (o *PaginationData) GetFirstOk() (*string, bool) {
+	if o == nil || IsNil(o.First) {
 		return nil, false
 	}
-	return &o.PageSize, true
+	return o.First, true
 }
 
-// SetPageSize sets field value
-func (o *PaginationData) SetPageSize(v int64) {
-	o.PageSize = v
+// HasFirst returns a boolean if a field has been set.
+func (o *PaginationData) HasFirst() bool {
+	if o != nil && !IsNil(o.First) {
+		return true
+	}
+
+	return false
 }
 
-// GetTotalItems returns the TotalItems field value
-func (o *PaginationData) GetTotalItems() int64 {
-	if o == nil {
-		var ret int64
+// SetFirst gets a reference to the given string and assigns it to the First field.
+func (o *PaginationData) SetFirst(v string) {
+	o.First = &v
+}
+
+// GetLast returns the Last field value if set, zero value otherwise.
+func (o *PaginationData) GetLast() string {
+	if o == nil || IsNil(o.Last) {
+		var ret string
 		return ret
 	}
-
-	return o.TotalItems
+	return *o.Last
 }
 
-// GetTotalItemsOk returns a tuple with the TotalItems field value
+// GetLastOk returns a tuple with the Last field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *PaginationData) GetTotalItemsOk() (*int64, bool) {
-	if o == nil {
+func (o *PaginationData) GetLastOk() (*string, bool) {
+	if o == nil || IsNil(o.Last) {
 		return nil, false
 	}
-	return &o.TotalItems, true
+	return o.Last, true
 }
 
-// SetTotalItems sets field value
-func (o *PaginationData) SetTotalItems(v int64) {
-	o.TotalItems = v
+// HasLast returns a boolean if a field has been set.
+func (o *PaginationData) HasLast() bool {
+	if o != nil && !IsNil(o.Last) {
+		return true
+	}
+
+	return false
+}
+
+// SetLast gets a reference to the given string and assigns it to the Last field.
+func (o *PaginationData) SetLast(v string) {
+	o.Last = &v
+}
+
+// GetPrev returns the Prev field value if set, zero value otherwise.
+func (o *PaginationData) GetPrev() string {
+	if o == nil || IsNil(o.Prev) {
+		var ret string
+		return ret
+	}
+	return *o.Prev
+}
+
+// GetPrevOk returns a tuple with the Prev field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *PaginationData) GetPrevOk() (*string, bool) {
+	if o == nil || IsNil(o.Prev) {
+		return nil, false
+	}
+	return o.Prev, true
+}
+
+// HasPrev returns a boolean if a field has been set.
+func (o *PaginationData) HasPrev() bool {
+	if o != nil && !IsNil(o.Prev) {
+		return true
+	}
+
+	return false
+}
+
+// SetPrev gets a reference to the given string and assigns it to the Prev field.
+func (o *PaginationData) SetPrev(v string) {
+	o.Prev = &v
+}
+
+// GetNext returns the Next field value if set, zero value otherwise.
+func (o *PaginationData) GetNext() string {
+	if o == nil || IsNil(o.Next) {
+		var ret string
+		return ret
+	}
+	return *o.Next
+}
+
+// GetNextOk returns a tuple with the Next field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *PaginationData) GetNextOk() (*string, bool) {
+	if o == nil || IsNil(o.Next) {
+		return nil, false
+	}
+	return o.Next, true
+}
+
+// HasNext returns a boolean if a field has been set.
+func (o *PaginationData) HasNext() bool {
+	if o != nil && !IsNil(o.Next) {
+		return true
+	}
+
+	return false
+}
+
+// SetNext gets a reference to the given string and assigns it to the Next field.
+func (o *PaginationData) SetNext(v string) {
+	o.Next = &v
 }
 
 func (o PaginationData) MarshalJSON() ([]byte, error) {
@@ -133,9 +215,19 @@ func (o PaginationData) MarshalJSON() ([]byte, error) {
 
 func (o PaginationData) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["page_number"] = o.PageNumber
-	toSerialize["page_size"] = o.PageSize
-	toSerialize["total_items"] = o.TotalItems
+	toSerialize["self"] = o.Self
+	if !IsNil(o.First) {
+		toSerialize["first"] = o.First
+	}
+	if !IsNil(o.Last) {
+		toSerialize["last"] = o.Last
+	}
+	if !IsNil(o.Prev) {
+		toSerialize["prev"] = o.Prev
+	}
+	if !IsNil(o.Next) {
+		toSerialize["next"] = o.Next
+	}
 	return toSerialize, nil
 }
 
@@ -144,9 +236,7 @@ func (o *PaginationData) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
-		"page_number",
-		"page_size",
-		"total_items",
+		"self",
 	}
 
 	allProperties := make(map[string]interface{})

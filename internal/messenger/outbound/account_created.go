@@ -3,6 +3,7 @@ package outbound
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/netbill/auth-svc/internal/core/models"
@@ -17,9 +18,12 @@ func (p Producer) WriteAccountCreated(
 	email string,
 ) error {
 	payload, err := json.Marshal(contracts.AccountCreatedPayload{
-		ID:    account.ID,
-		Email: email,
-		Role:  account.Role,
+		Data: contracts.AccountCreatedPayloadData{
+			ID:    account.ID,
+			Email: email,
+			Role:  account.Role,
+		},
+		Timestamp: time.Now().UTC(),
 	})
 	if err != nil {
 		return err

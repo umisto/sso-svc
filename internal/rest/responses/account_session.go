@@ -1,6 +1,8 @@
 package responses
 
 import (
+	"net/http"
+
 	"github.com/netbill/auth-svc/internal/core/models"
 	"github.com/netbill/auth-svc/resources"
 	"github.com/netbill/restkit/pagi"
@@ -22,19 +24,23 @@ func AccountSession(m models.Session) resources.AccountSession {
 	return resp
 }
 
-func AccountSessionsCollection(ms pagi.Page[[]models.Session]) resources.AccountSessionsCollection {
-	items := make([]resources.AccountSessionData, 0, len(ms.Data))
+func AccountSessionsCollection(r *http.Request, page pagi.Page[[]models.Session]) resources.AccountSessionsCollection {
+	data := make([]resources.AccountSessionData, 0, len(page.Data))
 
-	for _, s := range ms.Data {
-		items = append(items, AccountSession(s).Data)
+	for _, s := range page.Data {
+		data = append(data, AccountSession(s).Data)
 	}
 
+	links := pagi.BuildPageLinks(r, page.Page, page.Size, page.Total)
+
 	return resources.AccountSessionsCollection{
-		Data: items,
+		Data: data,
 		Links: resources.PaginationData{
-			PageNumber: int64(ms.Page),
-			PageSize:   int64(ms.Size),
-			TotalItems: int64(ms.Total),
+			First: links.First,
+			Last:  links.Last,
+			Prev:  links.Prev,
+			Next:  links.Next,
+			Self:  links.Self,
 		},
 	}
 }

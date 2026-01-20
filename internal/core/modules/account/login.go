@@ -62,14 +62,14 @@ func (s Service) createSession(
 		return models.TokensPair{}, err
 	}
 
-	refreshTokenCrypto, err := s.jwt.EncryptRefresh(pair.Refresh)
+	refreshHash, err := s.jwt.HashRefresh(pair.Refresh)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to encrypt refresh token for account %s, cause: %w", account.ID, err),
+			fmt.Errorf("failed to hash refresh token for account %s, cause: %w", account.ID, err),
 		)
 	}
 
-	_, err = s.repo.CreateSession(ctx, sessionID, account.ID, refreshTokenCrypto)
+	_, err = s.repo.CreateSession(ctx, sessionID, account.ID, refreshHash)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to createSession session for account %s, cause: %w", account.ID, err),

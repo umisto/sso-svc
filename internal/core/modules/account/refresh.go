@@ -41,13 +41,13 @@ func (s Service) Refresh(ctx context.Context, oldRefreshToken string) (models.To
 		)
 	}
 
-	refresh, err := s.jwt.DecryptRefresh(token)
+	refreshHash, err := s.jwt.HashRefresh(token)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to generate refresh token for account %s, cause: %w", accountID, err),
 		)
 	}
-	if refresh != oldRefreshToken {
+	if refreshHash != oldRefreshToken {
 		return models.TokensPair{}, errx.ErrorSessionTokenMismatch.Raise(
 			fmt.Errorf(
 				"refresh token does not match for session %s and account %s, cause: %w",
@@ -56,14 +56,14 @@ func (s Service) Refresh(ctx context.Context, oldRefreshToken string) (models.To
 		)
 	}
 
-	refresh, err = s.jwt.GenerateRefresh(account, tokenData.SessionID)
+	refresh, err := s.jwt.GenerateRefresh(account, tokenData.SessionID)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to generate refresh token for account %s, cause: %w", accountID, err),
 		)
 	}
 
-	refreshCrypto, err := s.jwt.EncryptRefresh(refresh)
+	refreshNewHash, err := s.jwt.HashRefresh(refresh)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to encrypt refresh token for account %s, cause: %w", accountID, err),
@@ -77,7 +77,7 @@ func (s Service) Refresh(ctx context.Context, oldRefreshToken string) (models.To
 		)
 	}
 
-	_, err = s.repo.UpdateSessionToken(ctx, tokenData.SessionID, refreshCrypto)
+	_, err = s.repo.UpdateSessionToken(ctx, tokenData.SessionID, refreshNewHash)
 	if err != nil {
 		return models.TokensPair{}, errx.ErrorInternal.Raise(
 			fmt.Errorf("failed to save refresh token for account %s, cause: %w", accountID, err),

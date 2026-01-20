@@ -1,8 +1,6 @@
 package token
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/netbill/auth-svc/internal/core/models"
 	"github.com/netbill/restkit/auth"
@@ -19,19 +17,10 @@ func (s Service) GenerateRefresh(account models.Account, sessionID uuid.UUID) (s
 	}, s.refreshSK)
 }
 
-func (s Service) EncryptRefresh(token string) (string, error) {
-	return encryptAESGCM(token, []byte(s.refreshSK))
-}
-
-func (s Service) DecryptRefresh(encryptedToken string) (string, error) {
-	raw, err := decryptAESGCM(encryptedToken, []byte(s.refreshSK))
-	if err != nil {
-		return "", fmt.Errorf("decrypt refresh: %w", err)
-	}
-
-	return raw, nil
-}
-
 func (s Service) ParseRefreshClaims(tokenStr string) (auth.AccountClaims, error) {
 	return auth.VerifyAccountJWT(tokenStr, s.refreshSK)
+}
+
+func (s Service) HashRefresh(rawRefresh string) (string, error) {
+	return hmacB64("refresh."+rawRefresh, s.refreshHK)
 }

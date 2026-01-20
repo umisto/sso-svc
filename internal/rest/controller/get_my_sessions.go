@@ -41,5 +41,5 @@ func (s *Service) GetMySessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ape.Render(w, http.StatusOK, responses.AccountSessionsCollection(sessions))
+	ape.Render(w, http.StatusOK, responses.AccountSessionsCollection(r, sessions))
 }

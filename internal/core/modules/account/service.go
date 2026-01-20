@@ -32,11 +32,10 @@ func NewService(
 }
 
 type JWTManager interface {
-	EncryptAccess(token string) (string, error)
-	EncryptRefresh(token string) (string, error)
-	DecryptRefresh(encryptedToken string) (string, error)
-
+	ParseAccessClaims(tokenStr string) (auth.AccountClaims, error)
 	ParseRefreshClaims(enc string) (auth.AccountClaims, error)
+
+	HashRefresh(rawRefresh string) (string, error)
 
 	GenerateAccess(
 		account models.Account, sessionID uuid.UUID,

@@ -56,7 +56,7 @@ type JWTConfig struct {
 		} `mapstructure:"access_token"`
 		RefreshToken struct {
 			SecretKey     string        `mapstructure:"secret_key"`
-			EncryptionKey string        `mapstructure:"encryption_key"`
+			HashKey       string        `mapstructure:"hash_key"`
 			TokenLifetime time.Duration `mapstructure:"token_lifetime"`
 		} `mapstructure:"refresh_token"`
 	} `mapstructure:"user"`

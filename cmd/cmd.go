@@ -39,6 +39,7 @@ func StartServices(ctx context.Context, cfg internal.Config, log logium.Logger, 
 	jwtTokenManager := token.NewManager(token.Config{
 		AccessSK:   cfg.JWT.User.AccessToken.SecretKey,
 		RefreshSK:  cfg.JWT.User.RefreshToken.SecretKey,
+		RefreshHK:  cfg.JWT.User.RefreshToken.HashKey,
 		AccessTTL:  cfg.JWT.User.AccessToken.TokenLifetime,
 		RefreshTTL: cfg.JWT.User.RefreshToken.TokenLifetime,
 		Iss:        cfg.Service.Name,

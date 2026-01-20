@@ -6,17 +6,17 @@ import (
 	"github.com/netbill/restkit/auth"
 )
 
-func (s Service) EncryptAccess(token string) (string, error) {
-	return encryptAESGCM(token, []byte(s.accessSK))
-}
-
-func (s Service) GenerateAccess(user models.Account, sessionID uuid.UUID) (string, error) {
+func (s Service) GenerateAccess(account models.Account, sessionID uuid.UUID) (string, error) {
 	return auth.GenerateAccountJWT(auth.GenerateAccountJwtRequest{
 		Issuer:    s.iss,
-		AccountID: user.ID,
-		//Audience:  []string{"gateway"},
+		Audience:  []string{s.iss},
+		AccountID: account.ID,
 		SessionID: sessionID,
-		Role:      user.Role,
+		Role:      account.Role,
 		Ttl:       s.accessTTL,
 	}, s.accessSK)
+}
+
+func (s Service) ParseAccessClaims(tokenStr string) (auth.AccountClaims, error) {
+	return auth.VerifyAccountJWT(tokenStr, s.accessSK)
 }

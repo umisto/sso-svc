@@ -3,6 +3,7 @@ package outbound
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/netbill/auth-svc/internal/messenger/contracts"
@@ -15,7 +16,10 @@ func (p Producer) WriteAccountDeleted(
 	accountID uuid.UUID,
 ) error {
 	payload, err := json.Marshal(contracts.AccountDeletedPayload{
-		AccountID: accountID,
+		Data: contracts.AccountDeletedPayloadData{
+			AccountID: accountID,
+		},
+		Timestamp: time.Now().UTC(),
 	})
 	if err != nil {
 		return err

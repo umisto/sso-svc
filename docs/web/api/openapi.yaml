@@ -1085,9 +1085,11 @@ components:
           id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
           type: account_session
         links:
-          page_number: 1
-          total_items: 100
-          page_size: 10
+          next: https://openapi-generator.tech
+          last: https://openapi-generator.tech
+          prev: https://openapi-generator.tech
+          self: https://openapi-generator.tech
+          first: https://openapi-generator.tech
       properties:
         data:
           items:
@@ -1146,29 +1148,34 @@ components:
       - errors
     PaginationData:
       example:
-        page_number: 1
-        total_items: 100
-        page_size: 10
+        next: https://openapi-generator.tech
+        last: https://openapi-generator.tech
+        prev: https://openapi-generator.tech
+        self: https://openapi-generator.tech
+        first: https://openapi-generator.tech
       properties:
-        page_number:
-          description: The current page number.
-          example: 1
-          format: int64
-          type: integer
-        page_size:
-          description: The number of items per page.
-          example: 10
-          format: int64
-          type: integer
-        total_items:
-          description: The total number of items available.
-          example: 100
-          format: int64
-          type: integer
+        self:
+          description: link to the current page
+          format: uri
+          type: string
+        first:
+          description: link to the first page
+          format: uri
+          type: string
+        last:
+          description: link to the last page
+          format: uri
+          type: string
+        prev:
+          description: link to the previous page
+          format: uri
+          type: string
+        next:
+          description: link to the next page
+          format: uri
+          type: string
       required:
-      - page_number
-      - page_size
-      - total_items
+      - self
     LoginByEmail_data_attributes:
       example:
         password: StrongP@ssw0rd!

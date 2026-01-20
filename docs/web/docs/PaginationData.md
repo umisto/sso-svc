@@ -4,15 +4,17 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**PageNumber** | **int64** | The current page number. | 
-**PageSize** | **int64** | The number of items per page. | 
-**TotalItems** | **int64** | The total number of items available. | 
+**Self** | **string** | link to the current page | 
+**First** | Pointer to **string** | link to the first page | [optional] 
+**Last** | Pointer to **string** | link to the last page | [optional] 
+**Prev** | Pointer to **string** | link to the previous page | [optional] 
+**Next** | Pointer to **string** | link to the next page | [optional] 
 
 ## Methods
 
 ### NewPaginationData
 
-`func NewPaginationData(pageNumber int64, pageSize int64, totalItems int64, ) *PaginationData`
+`func NewPaginationData(self string, ) *PaginationData`
 
 NewPaginationData instantiates a new PaginationData object
 This constructor will assign default values to properties that have it defined,
@@ -27,65 +29,125 @@ NewPaginationDataWithDefaults instantiates a new PaginationData object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetPageNumber
+### GetSelf
 
-`func (o *PaginationData) GetPageNumber() int64`
+`func (o *PaginationData) GetSelf() string`
 
-GetPageNumber returns the PageNumber field if non-nil, zero value otherwise.
+GetSelf returns the Self field if non-nil, zero value otherwise.
 
-### GetPageNumberOk
+### GetSelfOk
 
-`func (o *PaginationData) GetPageNumberOk() (*int64, bool)`
+`func (o *PaginationData) GetSelfOk() (*string, bool)`
 
-GetPageNumberOk returns a tuple with the PageNumber field if it's non-nil, zero value otherwise
+GetSelfOk returns a tuple with the Self field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetPageNumber
+### SetSelf
 
-`func (o *PaginationData) SetPageNumber(v int64)`
+`func (o *PaginationData) SetSelf(v string)`
 
-SetPageNumber sets PageNumber field to given value.
+SetSelf sets Self field to given value.
 
 
-### GetPageSize
+### GetFirst
 
-`func (o *PaginationData) GetPageSize() int64`
+`func (o *PaginationData) GetFirst() string`
 
-GetPageSize returns the PageSize field if non-nil, zero value otherwise.
+GetFirst returns the First field if non-nil, zero value otherwise.
 
-### GetPageSizeOk
+### GetFirstOk
 
-`func (o *PaginationData) GetPageSizeOk() (*int64, bool)`
+`func (o *PaginationData) GetFirstOk() (*string, bool)`
 
-GetPageSizeOk returns a tuple with the PageSize field if it's non-nil, zero value otherwise
+GetFirstOk returns a tuple with the First field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetPageSize
+### SetFirst
 
-`func (o *PaginationData) SetPageSize(v int64)`
+`func (o *PaginationData) SetFirst(v string)`
 
-SetPageSize sets PageSize field to given value.
+SetFirst sets First field to given value.
 
+### HasFirst
 
-### GetTotalItems
+`func (o *PaginationData) HasFirst() bool`
 
-`func (o *PaginationData) GetTotalItems() int64`
+HasFirst returns a boolean if a field has been set.
 
-GetTotalItems returns the TotalItems field if non-nil, zero value otherwise.
+### GetLast
 
-### GetTotalItemsOk
+`func (o *PaginationData) GetLast() string`
 
-`func (o *PaginationData) GetTotalItemsOk() (*int64, bool)`
+GetLast returns the Last field if non-nil, zero value otherwise.
 
-GetTotalItemsOk returns a tuple with the TotalItems field if it's non-nil, zero value otherwise
+### GetLastOk
+
+`func (o *PaginationData) GetLastOk() (*string, bool)`
+
+GetLastOk returns a tuple with the Last field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetTotalItems
+### SetLast
 
-`func (o *PaginationData) SetTotalItems(v int64)`
+`func (o *PaginationData) SetLast(v string)`
 
-SetTotalItems sets TotalItems field to given value.
+SetLast sets Last field to given value.
 
+### HasLast
+
+`func (o *PaginationData) HasLast() bool`
+
+HasLast returns a boolean if a field has been set.
+
+### GetPrev
+
+`func (o *PaginationData) GetPrev() string`
+
+GetPrev returns the Prev field if non-nil, zero value otherwise.
+
+### GetPrevOk
+
+`func (o *PaginationData) GetPrevOk() (*string, bool)`
+
+GetPrevOk returns a tuple with the Prev field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetPrev
+
+`func (o *PaginationData) SetPrev(v string)`
+
+SetPrev sets Prev field to given value.
+
+### HasPrev
+
+`func (o *PaginationData) HasPrev() bool`
+
+HasPrev returns a boolean if a field has been set.
+
+### GetNext
+
+`func (o *PaginationData) GetNext() string`
+
+GetNext returns the Next field if non-nil, zero value otherwise.
+
+### GetNextOk
+
+`func (o *PaginationData) GetNextOk() (*string, bool)`
+
+GetNextOk returns a tuple with the Next field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetNext
+
+`func (o *PaginationData) SetNext(v string)`
+
+SetNext sets Next field to given value.
+
+### HasNext
+
+`func (o *PaginationData) HasNext() bool`
+
+HasNext returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
