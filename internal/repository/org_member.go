@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/netbill/auth-svc/internal/core/models"
@@ -15,13 +16,27 @@ func (r Repository) CreateOrgMember(ctx context.Context, member models.Member) e
 		OrganizationID:  member.OrganizationID,
 		SourceCreatedAt: member.CreatedAt,
 	})
+	if err != nil {
+		return fmt.Errorf("failed to insert organization member, cause: %w", err)
+	}
+
 	return err
 }
 
 func (r Repository) DeleteOrgMember(ctx context.Context, memberID uuid.UUID) error {
-	return r.orgMembersQ(ctx).FilterByID(memberID).Delete(ctx)
+	err := r.orgMembersQ(ctx).FilterByID(memberID).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete organization member with id %s, cause: %w", memberID, err)
+	}
+
+	return nil
 }
 
 func (r Repository) ExistOrgMemberByAccount(ctx context.Context, accountID uuid.UUID) (bool, error) {
-	return r.orgMembersQ(ctx).FilterByID(accountID).Exists(ctx)
+	exist, err := r.orgMembersQ(ctx).FilterByID(accountID).Exists(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to check existence of organization member with account id %s, cause: %w", accountID, err)
+	}
+
+	return exist, nil
 }

@@ -2,42 +2,40 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/netbill/auth-svc/internal/repository/pgdb"
-	"github.com/netbill/pgx"
+	"github.com/netbill/pgxtx"
 )
 
 type Repository struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func New(db *sql.DB) *Repository {
-	return &Repository{
-		db: db,
-	}
+func New(pool *pgxpool.Pool) Repository {
+	return Repository{pool: pool}
 }
 
 func (r Repository) accountsQ(ctx context.Context) pgdb.AccountsQ {
-	return pgdb.NewAccountsQ(pgx.Exec(r.db, ctx))
+	return pgdb.NewAccountsQ(pgxtx.Exec(r.pool, ctx))
 }
 
 func (r Repository) sessionsQ(ctx context.Context) pgdb.SessionsQ {
-	return pgdb.NewSessionsQ(pgx.Exec(r.db, ctx))
+	return pgdb.NewSessionsQ(pgxtx.Exec(r.pool, ctx))
 }
 
 func (r Repository) passwordsQ(ctx context.Context) pgdb.AccountPasswordsQ {
-	return pgdb.NewAccountPasswordsQ(pgx.Exec(r.db, ctx))
+	return pgdb.NewAccountPasswordsQ(pgxtx.Exec(r.pool, ctx))
 }
 
 func (r Repository) emailsQ(ctx context.Context) pgdb.AccountEmailsQ {
-	return pgdb.NewAccountEmailsQ(pgx.Exec(r.db, ctx))
+	return pgdb.NewAccountEmailsQ(pgxtx.Exec(r.pool, ctx))
 }
 
 func (r Repository) orgMembersQ(ctx context.Context) pgdb.OrganizationMembersQ {
-	return pgdb.NewOrganizationMembersQ(pgx.Exec(r.db, ctx))
+	return pgdb.NewOrganizationMembersQ(pgxtx.Exec(r.pool, ctx))
 }
 
 func (r Repository) Transaction(ctx context.Context, fn func(ctx context.Context) error) error {
-	return pgx.Transaction(r.db, ctx, fn)
+	return pgxtx.Transaction(r.pool, ctx, fn)
 }

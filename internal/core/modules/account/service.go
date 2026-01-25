@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"unicode"
@@ -69,6 +70,10 @@ type repo interface {
 	GetAccountByEmail(ctx context.Context, email string) (models.Account, error)
 	GetAccountByUsername(ctx context.Context, username string) (models.Account, error)
 
+	ExistsAccountByID(ctx context.Context, accountID uuid.UUID) (bool, error)
+	ExistsAccountByEmail(ctx context.Context, email string) (bool, error)
+	ExistsAccountByUsername(ctx context.Context, username string) (bool, error)
+
 	GetAccountEmail(ctx context.Context, accountID uuid.UUID) (models.AccountEmail, error)
 	GetAccountPassword(ctx context.Context, accountID uuid.UUID) (models.AccountPassword, error)
 
@@ -113,16 +118,9 @@ type repo interface {
 }
 
 func (s Service) checkUsernameRequirements(ctx context.Context, username string) error {
-	res, err := s.repo.GetAccountByUsername(ctx, username)
+	_, err := s.repo.GetAccountByUsername(ctx, username)
 	if err != nil {
-		return errx.ErrorInternal.Raise(
-			fmt.Errorf("fetching user '%s' from db: %w", username, err),
-		)
-	}
-	if !res.IsNil() {
-		return errx.ErrorUsernameAlreadyTaken.Raise(
-			fmt.Errorf("user '%s' is already taken", username),
-		)
+		return err
 	}
 
 	if len(username) < 3 || len(username) > 32 {
@@ -206,24 +204,24 @@ func (s Service) validateSession(
 	initiator InitiatorData,
 ) (models.Account, models.Session, error) {
 	account, err := s.repo.GetAccountByID(ctx, initiator.AccountID)
-	if err != nil {
+	switch {
+	case errors.Is(err, errx.ErrorAccountNotFound):
+		return models.Account{}, models.Session{}, errx.ErrorInitiatorNotFound.Raise(
+			fmt.Errorf("account with id '%s' not found", initiator.SessionID),
+		)
+	case err != nil:
 		return models.Account{}, models.Session{}, errx.ErrorInitiatorNotFound.Raise(
 			fmt.Errorf("failed to get account with id '%s', cause: %w", initiator.SessionID, err),
 		)
 	}
-	if account.IsNil() {
-		return models.Account{}, models.Session{}, errx.ErrorInitiatorNotFound.Raise(
-			fmt.Errorf("account with id '%s' not found", initiator.SessionID),
-		)
-	}
 
 	session, err := s.repo.GetSession(ctx, initiator.SessionID)
-	if err != nil {
+	switch {
+	case errors.Is(err, errx.ErrorSessionNotFound):
 		return models.Account{}, models.Session{}, errx.ErrorInitiatorInvalidSession.Raise(
 			fmt.Errorf("failed to get session with id '%s', cause: %w", initiator.SessionID, err),
 		)
-	}
-	if session.IsNil() || session.AccountID != initiator.AccountID {
+	case session.AccountID != initiator.AccountID:
 		return models.Account{}, models.Session{}, errx.ErrorInitiatorInvalidSession.Raise(
 			fmt.Errorf("session with id '%s' not found for account '%s'", initiator.SessionID, initiator.AccountID),
 		)

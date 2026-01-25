@@ -24,7 +24,7 @@ func (s *Service) GetMyAccount(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to get account by id: %s", initiator.AccountID)
 		switch {
-		case errors.Is(err, errx.ErrorInitiatorNotFound):
+		case errors.Is(err, errx.ErrorAccountNotFound):
 			ape.RenderErr(w, problems.Unauthorized("initiator account not found by credentials"))
 		default:
 			ape.RenderErr(w, problems.InternalError())

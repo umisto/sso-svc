@@ -2,10 +2,8 @@ package account
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/netbill/auth-svc/internal/core/errx"
 	"github.com/netbill/auth-svc/internal/core/models"
 )
 
@@ -53,9 +51,7 @@ func (s Service) checkAccountPassword(
 ) error {
 	passData, err := s.repo.GetAccountPassword(ctx, accountID)
 	if err != nil {
-		return errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to get account password, cause: %w", err),
-		)
+		return err
 	}
 
 	if err = passData.CheckPasswordMatch(password); err != nil {
@@ -78,16 +74,12 @@ func (s Service) createSession(
 
 	refreshHash, err := s.jwt.HashRefresh(pair.Refresh)
 	if err != nil {
-		return models.TokensPair{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to hash refresh token for account %s, cause: %w", account.ID, err),
-		)
+		return models.TokensPair{}, err
 	}
 
 	_, err = s.repo.CreateSession(ctx, sessionID, account.ID, refreshHash)
 	if err != nil {
-		return models.TokensPair{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to createSession session for account %s, cause: %w", account.ID, err),
-		)
+		return models.TokensPair{}, err
 	}
 
 	return models.TokensPair{
@@ -103,16 +95,12 @@ func (s Service) createTokensPair(
 ) (models.TokensPair, error) {
 	access, err := s.jwt.GenerateAccess(account, sessionID)
 	if err != nil {
-		return models.TokensPair{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to generate access token for account %s, cause: %w", account.ID, err),
-		)
+		return models.TokensPair{}, err
 	}
 
 	refresh, err := s.jwt.GenerateRefresh(account, sessionID)
 	if err != nil {
-		return models.TokensPair{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to generate refresh token for account %s, cause: %w", account.ID, err),
-		)
+		return models.TokensPair{}, err
 	}
 
 	return models.TokensPair{

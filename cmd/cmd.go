@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 
-	"github.com/netbill/auth-svc/internal"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/netbill/auth-svc/internal/core/modules/account"
 	"github.com/netbill/auth-svc/internal/core/modules/organization"
 	"github.com/netbill/auth-svc/internal/messenger"
@@ -19,7 +18,7 @@ import (
 	"github.com/netbill/logium"
 )
 
-func StartServices(ctx context.Context, cfg internal.Config, log *logium.Logger, wg *sync.WaitGroup) {
+func StartServices(ctx context.Context, cfg Config, log *logium.Logger, wg *sync.WaitGroup) {
 	run := func(f func()) {
 		wg.Add(1)
 		go func() {
@@ -28,12 +27,12 @@ func StartServices(ctx context.Context, cfg internal.Config, log *logium.Logger,
 		}()
 	}
 
-	pg, err := sql.Open("postgres", cfg.Database.SQL.URL)
+	pool, err := pgxpool.New(ctx, cfg.Database.SQL.URL)
 	if err != nil {
 		log.Fatal("failed to connect to database", "error", err)
 	}
 
-	repo := repository.New(pg)
+	repo := repository.New(pool)
 
 	jwtTokenManager := tokenmanger.NewManager(tokenmanger.Config{
 		AccessSK:   cfg.JWT.User.AccessToken.SecretKey,
@@ -44,7 +43,7 @@ func StartServices(ctx context.Context, cfg internal.Config, log *logium.Logger,
 		Iss:        cfg.Service.Name,
 	})
 
-	kafkaOutbound := outbound.New(log, pg)
+	kafkaOutbound := outbound.New(log, pool)
 
 	accountCore := account.NewService(repo, jwtTokenManager, kafkaOutbound)
 	orgCore := organization.New(repo)
@@ -53,9 +52,17 @@ func StartServices(ctx context.Context, cfg internal.Config, log *logium.Logger,
 	mdll := middlewares.New(log, cfg.JWT.User.AccessToken.SecretKey)
 	router := rest.New(log, mdll, ctrl)
 
-	msgx := messenger.New(log, pg, cfg.Kafka.Brokers...)
+	msgx := messenger.New(log, pool, cfg.Kafka.Brokers...)
 
-	run(func() { router.Run(ctx, cfg) })
+	run(func() {
+		router.Run(ctx, rest.Config{
+			Port:              cfg.Rest.Port,
+			TimeoutRead:       cfg.Rest.Timeouts.Read,
+			TimeoutReadHeader: cfg.Rest.Timeouts.ReadHeader,
+			TimeoutWrite:      cfg.Rest.Timeouts.Write,
+			TimeoutIdle:       cfg.Rest.Timeouts.Idle,
+		})
+	})
 
 	log.Infof("starting kafka brokers %s", cfg.Kafka.Brokers)
 

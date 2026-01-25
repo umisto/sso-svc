@@ -2,14 +2,15 @@ package pgdb
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
-	"github.com/netbill/pgx"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/netbill/pgxtx"
 )
 
 const OrganizationMemberTable = "organization_members"
@@ -18,12 +19,12 @@ const OrganizationMemberColumns = "id, account_id, organization_id, source_creat
 const OrganizationMemberColumnsM = "m.id, m.account_id, m.organization_id, m.source_created_at, m.replica_created_at"
 
 type OrganizationMember struct {
-	ID             uuid.UUID `json:"id"`
-	AccountID      uuid.UUID `json:"account_id"`
-	OrganizationID uuid.UUID `json:"organization_id"`
+	ID             pgtype.UUID `json:"id"`
+	AccountID      pgtype.UUID `json:"account_id"`
+	OrganizationID pgtype.UUID `json:"organization_id"`
 
-	SourceCreatedAt  time.Time `json:"source_created_at"`
-	ReplicaCreatedAt time.Time `json:"replica_created_at"`
+	SourceCreatedAt  pgtype.Timestamptz `json:"source_created_at"`
+	ReplicaCreatedAt pgtype.Timestamptz `json:"replica_created_at"`
 }
 
 func (m *OrganizationMember) scan(row sq.RowScanner) error {
@@ -41,14 +42,14 @@ func (m *OrganizationMember) scan(row sq.RowScanner) error {
 }
 
 type OrganizationMembersQ struct {
-	db       pgx.DBTX
+	db       pgxtx.DBTX
 	selector sq.SelectBuilder
 	inserter sq.InsertBuilder
 	deleter  sq.DeleteBuilder
 	counter  sq.SelectBuilder
 }
 
-func NewOrganizationMembersQ(db pgx.DBTX) OrganizationMembersQ {
+func NewOrganizationMembersQ(db pgxtx.DBTX) OrganizationMembersQ {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	return OrganizationMembersQ{
 		db:       db,
@@ -69,18 +70,24 @@ type OrganizationMemberInsertInput struct {
 
 func (q OrganizationMembersQ) Insert(ctx context.Context, data OrganizationMemberInsertInput) (OrganizationMember, error) {
 	query, args, err := q.inserter.SetMap(map[string]interface{}{
-		"id":                 data.ID,
-		"account_id":         data.AccountID,
-		"organization_id":    data.OrganizationID,
-		"source_created_at":  data.SourceCreatedAt.UTC(),
-		"replica_created_at": time.Now().UTC(),
+		"id":              pgtype.UUID{Bytes: [16]byte(data.ID), Valid: true},
+		"account_id":      pgtype.UUID{Bytes: [16]byte(data.AccountID), Valid: true},
+		"organization_id": pgtype.UUID{Bytes: [16]byte(data.OrganizationID), Valid: true},
+		"source_created_at": pgtype.Timestamptz{
+			Time:  data.SourceCreatedAt.UTC(),
+			Valid: true,
+		},
+		"replica_created_at": pgtype.Timestamptz{
+			Time:  time.Now().UTC(),
+			Valid: true,
+		},
 	}).Suffix("RETURNING " + OrganizationMemberColumns).ToSql()
 	if err != nil {
 		return OrganizationMember{}, fmt.Errorf("building insert query for %s: %w", OrganizationMemberTable, err)
 	}
 
 	var inserted OrganizationMember
-	if err = inserted.scan(q.db.QueryRowContext(ctx, query, args...)); err != nil {
+	if err = inserted.scan(q.db.QueryRow(ctx, query, args...)); err != nil {
 		return OrganizationMember{}, err
 	}
 	return inserted, nil
@@ -93,13 +100,11 @@ func (q OrganizationMembersQ) Get(ctx context.Context) (OrganizationMember, erro
 	}
 
 	var m OrganizationMember
-	if err = m.scan(q.db.QueryRowContext(ctx, query, args...)); err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+	if err = m.scan(q.db.QueryRow(ctx, query, args...)); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return OrganizationMember{}, nil
-		default:
-			return OrganizationMember{}, err
 		}
+		return OrganizationMember{}, err
 	}
 	return m, nil
 }
@@ -110,7 +115,7 @@ func (q OrganizationMembersQ) Select(ctx context.Context) ([]OrganizationMember,
 		return nil, fmt.Errorf("building select query for %s: %w", OrganizationMemberTable, err)
 	}
 
-	rows, err := q.db.QueryContext(ctx, query, args...)
+	rows, err := q.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("executing select query for %s: %w", OrganizationMemberTable, err)
 	}
@@ -137,18 +142,16 @@ func (q OrganizationMembersQ) Exists(ctx context.Context) (bool, error) {
 		Limit(1).
 		ToSql()
 	if err != nil {
-		return false, fmt.Errorf("building exists query for %s: %w", OrganizationMemberTable, err)
+		return false, err
 	}
 
 	var one int
-	err = q.db.QueryRowContext(ctx, query, args...).Scan(&one)
+	err = q.db.QueryRow(ctx, query, args...).Scan(&one)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil
-		default:
-			return false, fmt.Errorf("executing exists query for %s: %w", OrganizationMemberTable, err)
 		}
+		return false, err
 	}
 
 	return true, nil
@@ -160,7 +163,7 @@ func (q OrganizationMembersQ) Delete(ctx context.Context) error {
 		return fmt.Errorf("building delete query for %s: %w", OrganizationMemberTable, err)
 	}
 
-	_, err = q.db.ExecContext(ctx, query, args...)
+	_, err = q.db.Exec(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("executing delete query for %s: %w", OrganizationMemberTable, err)
 	}
@@ -169,23 +172,29 @@ func (q OrganizationMembersQ) Delete(ctx context.Context) error {
 }
 
 func (q OrganizationMembersQ) FilterByID(id uuid.UUID) OrganizationMembersQ {
-	q.selector = q.selector.Where(sq.Eq{"m.id": id})
-	q.counter = q.counter.Where(sq.Eq{"m.id": id})
-	q.deleter = q.deleter.Where(sq.Eq{"m.id": id})
+	pid := pgtype.UUID{Bytes: [16]byte(id), Valid: true}
+
+	q.selector = q.selector.Where(sq.Eq{"m.id": pid})
+	q.counter = q.counter.Where(sq.Eq{"m.id": pid})
+	q.deleter = q.deleter.Where(sq.Eq{"m.id": pid})
 	return q
 }
 
 func (q OrganizationMembersQ) FilterByAccountID(accountID uuid.UUID) OrganizationMembersQ {
-	q.selector = q.selector.Where(sq.Eq{"m.account_id": accountID})
-	q.counter = q.counter.Where(sq.Eq{"m.account_id": accountID})
-	q.deleter = q.deleter.Where(sq.Eq{"m.account_id": accountID})
+	pid := pgtype.UUID{Bytes: [16]byte(accountID), Valid: true}
+
+	q.selector = q.selector.Where(sq.Eq{"m.account_id": pid})
+	q.counter = q.counter.Where(sq.Eq{"m.account_id": pid})
+	q.deleter = q.deleter.Where(sq.Eq{"m.account_id": pid})
 	return q
 }
 
 func (q OrganizationMembersQ) FilterByOrganizationID(organizationID uuid.UUID) OrganizationMembersQ {
-	q.selector = q.selector.Where(sq.Eq{"m.organization_id": organizationID})
-	q.counter = q.counter.Where(sq.Eq{"m.organization_id": organizationID})
-	q.deleter = q.deleter.Where(sq.Eq{"m.organization_id": organizationID})
+	pid := pgtype.UUID{Bytes: [16]byte(organizationID), Valid: true}
+
+	q.selector = q.selector.Where(sq.Eq{"m.organization_id": pid})
+	q.counter = q.counter.Where(sq.Eq{"m.organization_id": pid})
+	q.deleter = q.deleter.Where(sq.Eq{"m.organization_id": pid})
 	return q
 }
 
@@ -200,10 +209,13 @@ func (q OrganizationMembersQ) Count(ctx context.Context) (uint, error) {
 		return 0, fmt.Errorf("building count query for %s: %w", OrganizationMemberTable, err)
 	}
 
-	var count uint
-	if err = q.db.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+	var count int64
+	if err = q.db.QueryRow(ctx, query, args...).Scan(&count); err != nil {
 		return 0, fmt.Errorf("scanning count for %s: %w", OrganizationMemberTable, err)
 	}
+	if count < 0 {
+		return 0, fmt.Errorf("invalid count for %s: %d", OrganizationMemberTable, count)
+	}
 
-	return count, nil
+	return uint(count), nil
 }

@@ -24,7 +24,7 @@ func (s *Service) RefreshSession(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to refresh session token")
 		switch {
-		case errors.Is(err, errx.ErrorInitiatorNotFound):
+		case errors.Is(err, errx.ErrorAccountNotFound):
 			ape.RenderErr(w, problems.Unauthorized("account not found"))
 		case errors.Is(err, errx.ErrorSessionNotFound):
 			ape.RenderErr(w, problems.Unauthorized("session not found"))

@@ -3,6 +3,7 @@ package outbound
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/netbill/auth-svc/internal/core/models"
@@ -11,7 +12,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func (p Producer) WriteAccountCreated(
+func (p Outbound) WriteAccountCreated(
 	ctx context.Context,
 	account models.Account,
 ) error {
@@ -22,7 +23,7 @@ func (p Producer) WriteAccountCreated(
 		CreatedAt: account.CreatedAt,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal account created payload, cause: %w", err)
 	}
 
 	event, err := p.outbox.CreateOutboxEvent(
@@ -41,7 +42,7 @@ func (p Producer) WriteAccountCreated(
 		},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create outbox event for account created event, cause: %w", err)
 	}
 
 	p.log.Debugf("created outbox event %s for account %s, id %s", contracts.AccountCreatedEvent, event.ID.String(), account.ID.String())

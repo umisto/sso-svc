@@ -31,6 +31,8 @@ func (s *Service) DeleteMyAccount(w http.ResponseWriter, r *http.Request) {
 			ape.RenderErr(w, problems.Unauthorized("initiator account not found by credentials"))
 		case errors.Is(err, errx.ErrorInitiatorInvalidSession):
 			ape.RenderErr(w, problems.Unauthorized("initiator session is invalid"))
+		case errors.Is(err, errx.AccountHaveMembershipInOrg):
+			ape.RenderErr(w, problems.Forbidden("account cannot be deleted while having membership in organization"))
 		default:
 			ape.RenderErr(w, problems.InternalError())
 		}

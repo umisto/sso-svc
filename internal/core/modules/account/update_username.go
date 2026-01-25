@@ -2,9 +2,7 @@ package account
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/netbill/auth-svc/internal/core/errx"
 	"github.com/netbill/auth-svc/internal/core/models"
 )
 
@@ -21,15 +19,11 @@ func (s Service) UpdateUsername(ctx context.Context, initiator InitiatorData, ne
 	err = s.repo.Transaction(ctx, func(txCtx context.Context) error {
 		account, err = s.repo.UpdateAccountUsername(ctx, initiator.AccountID, newUsername)
 		if err != nil {
-			return errx.ErrorInternal.Raise(
-				fmt.Errorf("failed to update account username: %w", err),
-			)
+			return err
 		}
 
 		if err = s.messenger.WriteAccountUsernameUpdated(ctx, account); err != nil {
-			return errx.ErrorInternal.Raise(
-				fmt.Errorf("failed to send account username updated event: %w", err),
-			)
+			return err
 		}
 
 		return nil

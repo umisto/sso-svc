@@ -1,10 +1,9 @@
-package internal
+package cmd
 
 import (
 	"os"
 	"time"
 
-	_ "github.com/lib/pq" // postgres driver don`t delete
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"

@@ -22,19 +22,11 @@ type Account struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (a Account) IsNil() bool {
-	return a.ID == uuid.Nil
-}
-
 type AccountPassword struct {
 	AccountID uuid.UUID `json:"account_id"`
 	Hash      string    `json:"hash"`
 	UpdatedAt time.Time `json:"updated_at"`
 	CreatedAt time.Time `json:"created_at"`
-}
-
-func (ap AccountPassword) IsNil() bool {
-	return ap.AccountID == uuid.Nil
 }
 
 func (ap AccountPassword) CanChangePassword() error {
@@ -69,20 +61,6 @@ type AccountEmail struct {
 	Verified  bool      `json:"verified"`
 	UpdatedAt time.Time `json:"updated_at"`
 	CreatedAt time.Time `json:"created_at"`
-}
-
-func (ae AccountEmail) IsNil() bool {
-	return ae.AccountID == uuid.Nil
-}
-
-func (ae AccountEmail) CanChangeEmail() error {
-	if time.Since(ae.UpdatedAt) >= updateEmailCooldown {
-		return nil
-	}
-
-	return errx.ErrorCannotChangeEmailYet.Raise(fmt.Errorf(
-		"account with id %s cannot change email yet", ae.AccountID),
-	)
 }
 
 func (ae AccountEmail) IsVerified() error {

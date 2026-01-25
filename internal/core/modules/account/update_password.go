@@ -20,14 +20,7 @@ func (s Service) UpdatePassword(
 
 	passData, err := s.repo.GetAccountPassword(ctx, initiator.AccountID)
 	if err != nil {
-		return errx.ErrorInternal.Raise(
-			fmt.Errorf("getting password for account %s, cause: %w", initiator.AccountID, err),
-		)
-	}
-	if passData.IsNil() {
-		return errx.ErrorInitiatorNotFound.Raise(
-			fmt.Errorf("password for account %s not found, cause: %w", initiator.AccountID, err),
-		)
+		return err
 	}
 
 	if err = passData.CanChangePassword(); err != nil {
@@ -42,6 +35,7 @@ func (s Service) UpdatePassword(
 		return err
 	}
 
+	//TODO remove from here
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return errx.ErrorInternal.Raise(
@@ -52,16 +46,12 @@ func (s Service) UpdatePassword(
 	return s.repo.Transaction(ctx, func(txCtx context.Context) error {
 		_, err = s.repo.UpdateAccountPassword(ctx, initiator.AccountID, string(hash))
 		if err != nil {
-			return errx.ErrorInternal.Raise(
-				fmt.Errorf("updating password for account %s, cause: %w", initiator.AccountID, err),
-			)
+			return err
 		}
 
 		err = s.repo.DeleteSessionsForAccount(ctx, account.ID)
 		if err != nil {
-			return errx.ErrorInternal.Raise(
-				fmt.Errorf("deleting sessions for account %s after password change, cause: %w", initiator.AccountID, err),
-			)
+			return err
 		}
 
 		return nil

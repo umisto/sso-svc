@@ -10,13 +10,12 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/netbill/auth-svc/cmd"
 	"github.com/netbill/auth-svc/cmd/migrations"
-	"github.com/netbill/auth-svc/internal"
 	"github.com/netbill/logium"
 	"github.com/sirupsen/logrus"
 )
 
 func Run(args []string) bool {
-	cfg, err := internal.LoadConfig()
+	cfg, err := cmd.LoadConfig()
 	if err != nil {
 		panic(err)
 	}

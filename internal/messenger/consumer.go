@@ -31,12 +31,12 @@ func (m Messenger) RunConsumer(ctx context.Context, handlers handlers) {
 		}()
 	}
 
-	orgConsumer := consumer.New(m.log, m.db, "auth-svc-org-consumer", consumer.OnUnknownDoNothing, m.addr...)
+	orgConsumer := consumer.New(m.log, m.pool, "auth-svc-org-consumer", consumer.OnUnknownDoNothing, m.addr...)
 
 	orgConsumer.Handle(contracts.OrgMemberCreatedEvent, handlers.OrgMemberCreated)
 	orgConsumer.Handle(contracts.OrgMemberDeletedEvent, handlers.OrgMemberDeleted)
 
-	inboxer1 := consumer.NewInboxer(m.log, m.db, consumer.ConfigInboxer{
+	inboxer1 := consumer.NewInboxer(m.log, m.pool, consumer.ConfigInboxer{
 		Name:       "auth-svc-inbox-worker-1",
 		BatchSize:  10,
 		RetryDelay: 1 * time.Minute,

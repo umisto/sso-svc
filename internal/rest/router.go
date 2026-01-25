@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/netbill/auth-svc/internal"
 	"github.com/netbill/logium"
 	"github.com/netbill/restkit/tokens/roles"
 )
@@ -62,7 +61,15 @@ func New(
 	}
 }
 
-func (s *Service) Run(ctx context.Context, cfg internal.Config) {
+type Config struct {
+	Port              string
+	TimeoutRead       time.Duration
+	TimeoutReadHeader time.Duration
+	TimeoutWrite      time.Duration
+	TimeoutIdle       time.Duration
+}
+
+func (s *Service) Run(ctx context.Context, cfg Config) {
 	auth := s.middlewares.AccountAuth()
 	sysadmin := s.middlewares.AccountRoleGrant(map[string]bool{
 		roles.SystemAdmin: true,
@@ -123,15 +130,15 @@ func (s *Service) Run(ctx context.Context, cfg internal.Config) {
 	})
 
 	srv := &http.Server{
-		Addr:              cfg.Rest.Port,
+		Addr:              cfg.Port,
 		Handler:           r,
-		ReadTimeout:       cfg.Rest.Timeouts.Read,
-		ReadHeaderTimeout: cfg.Rest.Timeouts.ReadHeader,
-		WriteTimeout:      cfg.Rest.Timeouts.Write,
-		IdleTimeout:       cfg.Rest.Timeouts.Idle,
+		ReadTimeout:       cfg.TimeoutRead,
+		ReadHeaderTimeout: cfg.TimeoutReadHeader,
+		WriteTimeout:      cfg.TimeoutWrite,
+		IdleTimeout:       cfg.TimeoutIdle,
 	}
 
-	s.log.Infof("starting REST service on %s", cfg.Rest.Port)
+	s.log.Infof("starting REST service on %s", cfg.Port)
 
 	errCh := make(chan error, 1)
 	go func() {

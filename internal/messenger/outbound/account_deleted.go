@@ -3,6 +3,7 @@ package outbound
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,7 +12,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func (p Producer) WriteAccountDeleted(
+func (p Outbound) WriteAccountDeleted(
 	ctx context.Context,
 	accountID uuid.UUID,
 ) error {
@@ -20,7 +21,7 @@ func (p Producer) WriteAccountDeleted(
 		DeletedAt: time.Now().UTC(),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal account deleted payload, cause: %w", err)
 	}
 
 	event, err := p.outbox.CreateOutboxEvent(
@@ -39,7 +40,7 @@ func (p Producer) WriteAccountDeleted(
 		},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create outbox event for account deleted event, cause: %w", err)
 	}
 
 	p.log.Debugf("created outbox event %s for account %s, id %s", contracts.AccountDeletedEvent, event.ID.String(), accountID.String())

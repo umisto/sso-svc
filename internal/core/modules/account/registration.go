@@ -22,21 +22,29 @@ func (s Service) Registration(
 	ctx context.Context,
 	params RegistrationParams,
 ) (models.Account, error) {
-	check, err := s.accountExistsByEmail(ctx, params.Email)
+	check, err := s.repo.ExistsAccountByEmail(ctx, params.Email)
 	if err != nil {
 		return models.Account{}, err
 	}
 	if check {
 		return models.Account{}, errx.ErrorEmailAlreadyExist.Raise(
-			fmt.Errorf("account with email '%s' already exists", params.Email),
+			fmt.Errorf("account with email %s already exists", params.Email),
+		)
+	}
+
+	check, err = s.repo.ExistsAccountByUsername(ctx, params.Username)
+	if err != nil {
+		return models.Account{}, err
+	}
+	if check {
+		return models.Account{}, errx.ErrorUsernameAlreadyTaken.Raise(
+			fmt.Errorf("account with username %s already exists", params.Username),
 		)
 	}
 
 	err = roles.ValidateUserSystemRole(params.Role)
 	if err != nil {
-		return models.Account{}, errx.ErrorRoleNotSupported.Raise(
-			fmt.Errorf("failed to parsing role for new account with email '%s', cause: %w", params.Email, err),
-		)
+		return models.Account{}, err
 	}
 
 	err = s.checkPasswordRequirements(params.Password)
@@ -51,9 +59,7 @@ func (s Service) Registration(
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return models.Account{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to hashing password, cause: %w", err),
-		)
+		return models.Account{}, err
 	}
 
 	var account models.Account
@@ -65,15 +71,11 @@ func (s Service) Registration(
 			PasswordHash: string(hash),
 		})
 		if err != nil {
-			return errx.ErrorInternal.Raise(
-				fmt.Errorf("failed to inserting new account with email '%s', cause: %w", params.Email, err),
-			)
+			return err
 		}
 
 		if err = s.messenger.WriteAccountCreated(ctx, account); err != nil {
-			return errx.ErrorInternal.Raise(
-				fmt.Errorf("failed to publish account created messenger for account '%s', cause: %w", account.ID, err),
-			)
+			return err
 		}
 
 		return nil
@@ -92,14 +94,7 @@ func (s Service) RegistrationByAdmin(
 ) (models.Account, error) {
 	initiator, err := s.repo.GetAccountByID(ctx, initiatorID)
 	if err != nil {
-		return models.Account{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to get initiator with id '%s', cause: %w", initiatorID, err),
-		)
-	}
-	if initiator.IsNil() {
-		return models.Account{}, errx.ErrorInitiatorNotFound.Raise(
-			fmt.Errorf("initiator with id '%s' not found", initiatorID),
-		)
+		return models.Account{}, err
 	}
 
 	if initiator.Role != roles.SystemAdmin {
@@ -120,9 +115,7 @@ func (s Service) RegistrationByAdmin(
 
 	err = s.messenger.WriteAccountCreated(ctx, account)
 	if err != nil {
-		return models.Account{}, errx.ErrorInternal.Raise(
-			fmt.Errorf("failed to publish admin created messenger for account '%s', cause: %w", account.ID, err),
-		)
+		return models.Account{}, err
 	}
 
 	return account, nil
