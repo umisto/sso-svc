@@ -68,10 +68,8 @@ type InsertAccountParams struct {
 }
 
 func (q AccountsQ) Insert(ctx context.Context, input InsertAccountParams) (Account, error) {
-	id := pgtype.UUID{Bytes: [16]byte(input.ID), Valid: true}
-
 	query, args, err := q.inserter.SetMap(map[string]interface{}{
-		"id":       id,
+		"id":       pgtype.UUID{Bytes: input.ID, Valid: true},
 		"username": pgtype.Text{String: input.Username, Valid: true},
 		"role":     pgtype.Text{String: input.Role, Valid: true},
 	}).Suffix("RETURNING " + accountsTable + ".*").ToSql()
@@ -102,50 +100,6 @@ func (q AccountsQ) Get(ctx context.Context) (Account, error) {
 	}
 
 	return a, nil
-}
-
-func (q AccountsQ) UpdateMany(ctx context.Context) (int64, error) {
-	q.updater = q.updater.Set("updated_at", pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true})
-
-	query, args, err := q.updater.ToSql()
-	if err != nil {
-		return 0, fmt.Errorf("building update query for %s: %w", accountsTable, err)
-	}
-
-	tag, err := q.db.Exec(ctx, query, args...)
-	if err != nil {
-		return 0, fmt.Errorf("executing update query for %s: %w", accountsTable, err)
-	}
-
-	return tag.RowsAffected(), nil
-}
-
-func (q AccountsQ) UpdateOne(ctx context.Context) (Account, error) {
-	q.updater = q.updater.Set("updated_at", pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true})
-
-	query, args, err := q.updater.
-		Suffix("RETURNING " + accountsColumns).
-		ToSql()
-	if err != nil {
-		return Account{}, fmt.Errorf("building update query for %s: %w", accountsTable, err)
-	}
-
-	var updated Account
-	if err = updated.scan(q.db.QueryRow(ctx, query, args...)); err != nil {
-		return Account{}, err
-	}
-
-	return updated, nil
-}
-
-func (q AccountsQ) UpdateRole(role string) AccountsQ {
-	q.updater = q.updater.Set("role", pgtype.Text{String: role, Valid: true})
-	return q
-}
-
-func (q AccountsQ) UpdateUsername(username string) AccountsQ {
-	q.updater = q.updater.Set("username", pgtype.Text{String: username, Valid: true})
-	return q
 }
 
 func (q AccountsQ) Select(ctx context.Context) ([]Account, error) {
@@ -196,6 +150,50 @@ func (q AccountsQ) Exists(ctx context.Context) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (q AccountsQ) UpdateMany(ctx context.Context) (int64, error) {
+	q.updater = q.updater.Set("updated_at", pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true})
+
+	query, args, err := q.updater.ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("building update query for %s: %w", accountsTable, err)
+	}
+
+	tag, err := q.db.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("executing update query for %s: %w", accountsTable, err)
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+func (q AccountsQ) UpdateOne(ctx context.Context) (Account, error) {
+	q.updater = q.updater.Set("updated_at", pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true})
+
+	query, args, err := q.updater.
+		Suffix("RETURNING " + accountsColumns).
+		ToSql()
+	if err != nil {
+		return Account{}, fmt.Errorf("building update query for %s: %w", accountsTable, err)
+	}
+
+	var updated Account
+	if err = updated.scan(q.db.QueryRow(ctx, query, args...)); err != nil {
+		return Account{}, err
+	}
+
+	return updated, nil
+}
+
+func (q AccountsQ) UpdateRole(role string) AccountsQ {
+	q.updater = q.updater.Set("role", pgtype.Text{String: role, Valid: true})
+	return q
+}
+
+func (q AccountsQ) UpdateUsername(username string) AccountsQ {
+	q.updater = q.updater.Set("username", pgtype.Text{String: username, Valid: true})
+	return q
 }
 
 func (q AccountsQ) Delete(ctx context.Context) error {
